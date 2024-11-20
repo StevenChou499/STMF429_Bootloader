@@ -51,6 +51,10 @@ void parse_bootloader_cmd(void)
             myprintf("Received a command ask for command options!\r\n");
             bootloader_handle_gethelp_cmd(recv_buf, cmd_len);
             break;
+        case BL_GET_CID_CMD:
+            myprintf("Received a command ask for chip id!\r\n");
+            bootloader_handle_getcid_cmd(recv_buf, cmd_len);
+            break;
         default:
             myprintf("Unknown command\r\n");
             break;
@@ -88,7 +92,15 @@ void bootloader_handle_gethelp_cmd(unsigned char *rx_buffer, unsigned int cmd_le
 
 void bootloader_handle_getcid_cmd(unsigned char *rx_buffer, unsigned int cmd_len)
 {
-
+    if (CRC_ERROR == CRC32_verify(rx_buffer, cmd_len)) {
+        myprintf("Incorrect CRC!\r\n");
+        bootloader_send_nack();
+    } else {
+        myprintf("Correct CRC!\r\n");
+        bootloader_send_ack();
+        unsigned int id_code = get_mcu_chip_id();
+        UART3_Transmit((char *) &id_code, 4U);
+    }
 }
 
 
@@ -98,9 +110,11 @@ unsigned char get_bootloader_version(void)
     return btldr_strct.btldr_version;
 }
 
-unsigned char get_mcu_chip_id(void)
+unsigned int get_mcu_chip_id(void)
 {
-
+    // unsigned int id_code = *(volatile unsigned int *)(DBGMCU_IDCODE_ADDR) & 0xFFF;
+    unsigned int id_code = *(volatile unsigned int *)(DBGMCU_IDCODE_ADDR);
+    return id_code;
 }
 
 

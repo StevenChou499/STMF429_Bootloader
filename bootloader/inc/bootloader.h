@@ -2,6 +2,8 @@
 #define ACK                       0x0A
 #define NACK                      0x0C
 
+#define DBGMCU_IDCODE_ADDR        (0xE0042000U)
+
 typedef enum BL_CMD_t {
     BL_GET_VER_CMD            = 0x50,
     BL_GET_HELP_CMD           = 0x51,
@@ -28,7 +30,7 @@ void bootloader_handle_getver_cmd(unsigned char *rx_buffer, unsigned int cmd_len
 void bootloader_handle_gethelp_cmd(unsigned char *rx_buffer, unsigned int cmd_len);
 void bootloader_handle_getcid_cmd(unsigned char *rx_buffer, unsigned int cmd_len);
 unsigned char get_bootloader_version(void);
-unsigned char get_mcu_chip_id(void);
+unsigned int get_mcu_chip_id(void);
 
 void bootloader_send_ack(void);
 void bootloader_send_nack(void);
