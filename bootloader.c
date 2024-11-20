@@ -82,10 +82,7 @@ void bootloader_handle_gethelp_cmd(unsigned char *rx_buffer, unsigned int cmd_le
         myprintf("Correct CRC!\r\n");
         bootloader_send_ack();
         unsigned int length = strlen(btldr_strct.btldr_help_msg);
-        // const char *str = "Waterburbur\r\n\r\n";
-        // unsigned int length = strlen(str);
         UART3_Transmit(btldr_strct.btldr_help_msg, length);
-        // UART3_Transmit(str, length);
     }
 }
 
