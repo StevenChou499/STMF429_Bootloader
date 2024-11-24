@@ -11,79 +11,55 @@ using namespace std;
 
 int main()
 {
-    // Replace with your serial port name
-    // const char* portname = "/dev/ttyACM0";
-
-    // int fd = open(portname, O_RDWR | O_NOCTTY | O_SYNC);
-    // if (fd < 0) {
-    //     cerr << "Error opening " << portname << ": " << strerror(errno) << endl;
-    //     return 1;
-    // }
-
-    // struct termios tty;
-    // tcgetattr(fd, &tty);
-    // cfsetospeed(&tty, B115200);
-    // cfsetispeed(&tty, B115200);
-
-    // tty.c_cflag &= ~CSIZE;
-    // tty.c_cflag |= CS8;     // set data bits as 8 bit
-    // tty.c_cflag &= ~(CSTOPB | PARENB | PARODD | CRTSCTS);
-    // tty.c_cflag |= (CREAD | CLOCAL);
-
-    // tty.c_iflag &= ~(IGNBRK | IXON | IXOFF | IXANY | INLCR | IGNCR | ICRNL);
-    // tty.c_oflag = 0;
-    // tty.c_lflag = 0;
-
-    // if (tcsetattr(fd, TCSANOW, &tty) != 0) {
-    //     cerr << "Error from tcsetattr: " << strerror(errno) << endl;
-    //     return 1;
-    // }
-
     string portname = "/dev/ttyACM0";
     host_app btldr_app(portname);
 
-    cout << "host_app created..." << endl;
+    // cout << "host_app created..." << endl;
 
-    uint8_t cmd_len = 1;
-    write(btldr_app.mcu_fd, &cmd_len, 1);
+    while (1) {
+        btldr_app.show_prompt();
 
-    uint8_t cmd_code[128];
-    cmd_code[0] = 0x52;
-    uint32_t crc = btldr_app.get_crc(cmd_code, 1);
-    *(uint32_t *)(cmd_code + 1) = crc;
-    write(btldr_app.mcu_fd, cmd_code, 5);
+        uint8_t cmd_len = 1;
+        write(btldr_app.mcu_fd, &cmd_len, 1);
 
-    uint8_t respond[1024] = {0};
-    read(btldr_app.mcu_fd, respond, 1);
+        uint8_t cmd_code[128];
+        cmd_code[0] = 0x52;
+        uint32_t crc = btldr_app.get_crc(cmd_code, 1);
+        *(uint32_t *)(cmd_code + 1) = crc;
+        write(btldr_app.mcu_fd, cmd_code, 5);
 
-    cout << "The responded code is " << (uint32_t)respond[0] << endl;
+        uint8_t respond[1024] = {0};
+        read(btldr_app.mcu_fd, respond, 1);
 
-    if (respond[0] == (uint8_t) 0xA) {
-        // read(fd, respond + 1, 1);
-        uint32_t read_length = 4U;
-        // read(fd, respond + 1, read_length);
-        uint32_t total_read_bytes = 0U;
-        while (total_read_bytes < read_length) {
-            int bytesRead = read(btldr_app.mcu_fd, respond + 1 + total_read_bytes, read_length - total_read_bytes);
-            total_read_bytes += bytesRead;
-            cout << "Read " << bytesRead << " bytes" << endl;
-            cout << "Total read " << total_read_bytes << " bytes" << endl;
+        cout << "The responded code is " << (uint32_t)respond[0] << endl;
+
+        if (respond[0] == (uint8_t) 0xA) {
+            // read(fd, respond + 1, 1);
+            uint32_t read_length = 4U;
+            // read(fd, respond + 1, read_length);
+            uint32_t total_read_bytes = 0U;
+            while (total_read_bytes < read_length) {
+                int bytesRead = read(btldr_app.mcu_fd, respond + 1 + total_read_bytes, read_length - total_read_bytes);
+                total_read_bytes += bytesRead;
+                cout << "Read " << bytesRead << " bytes" << endl;
+                cout << "Total read " << total_read_bytes << " bytes" << endl;
+            }
+            // uint32_t length = read(fd, respond + 1, 14);
+            // cout << "The bootloader version is " << (uint32_t)respond[1] << endl;
+            // cout << "Bootloader help message : " << endl << respond[0] << endl;
+            // for (int i = 1; i <= 572; i++) {
+                // cout << (uint32_t) respond[i] << ", (" << respond[i] << ")" << endl;
+            // }
+            // cout << "Total read " << total_read_bytes << " bytes" << endl;
+            // cout << "Bootloader help message: " << endl << respond + 1 << endl;
+            cout << "Micro-controller's ID value : " << hex << *(uint32_t *)(respond + 1) << endl;
+        } else if (respond[0] == (uint8_t) 0xC) {
+            cerr << "Error cmd from bootloader" << endl;
         }
-        // uint32_t length = read(fd, respond + 1, 14);
-        // cout << "The bootloader version is " << (uint32_t)respond[1] << endl;
-        // cout << "Bootloader help message : " << endl << respond[0] << endl;
-        // for (int i = 1; i <= 572; i++) {
-            // cout << (uint32_t) respond[i] << ", (" << respond[i] << ")" << endl;
-        // }
-        // cout << "Total read " << total_read_bytes << " bytes" << endl;
-        // cout << "Bootloader help message: " << endl << respond + 1 << endl;
-        cout << "Micro-controller's ID value : " << hex << *(uint32_t *)(respond + 1) << endl;
-    } else if (respond[0] == (uint8_t) 0xC) {
-        cerr << "Error cmd from bootloader" << endl;
+
+        // cout << "The value of index 0 and 1 is " << (uint32_t)respond[0] << ", " << (uint32_t)respond[1] << endl;
     }
-
-    // cout << "The value of index 0 and 1 is " << (uint32_t)respond[0] << ", " << (uint32_t)respond[1] << endl;
-
+    
     cout << "host_app deleted..." << endl;
 
     return 0;

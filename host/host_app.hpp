@@ -11,9 +11,13 @@ class host_app {
     public:
         int32_t mcu_fd;
         uint32_t get_crc(uint8_t *pBuf, uint32_t length);
+        int32_t users_choice;
+        
     public:
         host_app(string portname);
         ~host_app();
+        void show_prompt(void);
+        void get_user_input(void);
 };
 
 uint32_t host_app::get_crc(uint8_t *pBuf, uint32_t length)
@@ -56,10 +60,36 @@ host_app::host_app(string portname)
         throw std::runtime_error("Error configuring tty settings");
     }
 
+    cout << "Welcome for using STM32F4bootloader !" << endl;
+    cout << endl;
 }
 
 host_app::~host_app()
 {
     if (mcu_fd >= 0)
         close(mcu_fd);
+}
+
+void host_app::show_prompt(void)
+{
+    cout << "Bootloader command options: " << endl;
+    cout << "Get bootloader version                :  1" << endl;
+    cout << "Get bootloader help message           :  2" << endl;
+    cout << "Get bootloader chip id                :  3" << endl;
+    cout << "Get bootloader read protection status :  4" << endl;
+    cout << "Go to specific address                :  5" << endl;
+    cout << "Erase flash sections                  :  6" << endl;
+    cout << "Memory read                           :  7" << endl;
+    cout << "Memory write                          :  8" << endl;
+    cout << "Enable read write protection          :  9" << endl;
+    cout << "Disable read write protection         : 10" << endl;
+    cout << "Read sector status                    : 11" << endl;
+    cout << "Read one time programmable memory     : 12" << endl;
+    cout << "quit                                  :  q" << endl;
+}
+
+void host_app::get_user_input(void)
+{
+    string option;
+    cin >> option;
 }
