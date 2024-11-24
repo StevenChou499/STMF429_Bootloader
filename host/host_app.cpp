@@ -18,6 +18,9 @@ int main()
 
     while (1) {
         btldr_app.show_prompt();
+        if (btldr_app.get_user_input() == false) {
+            cerr << "Error input value!" << endl;
+        }
 
         uint8_t cmd_len = 1;
         write(btldr_app.mcu_fd, &cmd_len, 1);

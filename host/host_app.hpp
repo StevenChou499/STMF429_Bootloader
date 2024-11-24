@@ -5,19 +5,24 @@
 #include <iostream>
 #include <termios.h>
 
-using std::string, std::cout, std::cerr, std::hex, std::endl;
+using std::string, 
+      std::cin, 
+      std::cout, 
+      std::cerr, 
+      std::hex, 
+      std::endl;
 
 class host_app {
     public:
         int32_t mcu_fd;
         uint32_t get_crc(uint8_t *pBuf, uint32_t length);
-        int32_t users_choice;
+        uint32_t users_choice;
         
     public:
         host_app(string portname);
         ~host_app();
         void show_prompt(void);
-        void get_user_input(void);
+        bool get_user_input(void);
 };
 
 uint32_t host_app::get_crc(uint8_t *pBuf, uint32_t length)
@@ -88,8 +93,22 @@ void host_app::show_prompt(void)
     cout << "quit                                  :  q" << endl;
 }
 
-void host_app::get_user_input(void)
+bool host_app::get_user_input(void)
 {
-    string option;
-    cin >> option;
+    string input_value;
+    cin >> input_value;
+
+    bool correctness = false;
+    try {
+        users_choice = std::stoi(input_value);
+        if ((users_choice >= 1) && (users_choice <= 12))
+            correctness = true;
+    } catch (const std::invalid_argument&) {
+        if ((input_value.length() == 1) && (input_value[0] == 'q')) {
+            users_choice = 113U;
+            correctness = true;
+        }
+    }
+    
+    return correctness;
 }
