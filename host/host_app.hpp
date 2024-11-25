@@ -5,40 +5,47 @@
 #include <iostream>
 #include <termios.h>
 
+#define TX_BUFFER_LEN (1024U)
+#define RX_BUFFER_LEN (128U)
+
 using std::string, 
       std::cin, 
       std::cout, 
       std::cerr, 
       std::hex, 
       std::endl;
+    
+typedef union {
+    uint32_t int_value;
+    uint8_t  ch_array[4];
+} int_or_chars;
 
 class host_app {
-    public:
-        int32_t mcu_fd;
-        uint32_t get_crc(uint8_t *pBuf, uint32_t length);
-        uint32_t users_choice;
-        
-    public:
-        host_app(string portname);
-        ~host_app();
-        void show_prompt(void);
-        bool get_user_input(void);
-};
+public:
+    typedef void (host_app::*functionpointer)();
+    int32_t mcu_fd;
+    uint32_t users_choice;
+    uint8_t tx_buffer[TX_BUFFER_LEN];
+    uint8_t rx_buffer[RX_BUFFER_LEN];
+    uint32_t tx_cmd_len;
+    uint32_t rx_cmd_len;
+    functionpointer func_table[12];
 
-uint32_t host_app::get_crc(uint8_t *pBuf, uint32_t length)
-{
-    uint32_t crc_value = 0xFFFFFFFF;
-    for (uint32_t i = 0; i < length; i++) {
-        crc_value ^= pBuf[i];
-        for (uint32_t index = 0; index < 32U; index++) {
-            if (crc_value & 0x80000000)
-                crc_value = (crc_value << 1) ^ 0x04C11DB7;
-            else
-                crc_value = (crc_value << 1);
-        }
-    }
-    return crc_value;
-}
+    void write_getver_cmd(void);
+    void write_gethelp_cmd(void);
+    void write_getcid_cmd(void);
+    void write_get_read_prot_cmd(void);
+    uint32_t get_crc(uint8_t *pBuf, uint32_t length);
+    void append_crc(uint8_t *pBuf, uint32_t length);
+        
+        
+public:
+    host_app(string portname);
+    ~host_app();
+    void show_prompt(void);
+    bool get_user_input(void);
+    void parse_command(void);
+};
 
 host_app::host_app(string portname)
 {
@@ -64,6 +71,12 @@ host_app::host_app(string portname)
     if (tcsetattr(mcu_fd, TCSANOW, &tty) != 0) {
         throw std::runtime_error("Error configuring tty settings");
     }
+
+    func_table[0] = NULL;
+    func_table[1] = &host_app::write_getver_cmd;
+    func_table[2] = &host_app::write_gethelp_cmd;
+    func_table[3] = &host_app::write_getcid_cmd;
+    func_table[4] = &host_app::write_get_read_prot_cmd;
 
     cout << "Welcome for using STM32F4bootloader !" << endl;
     cout << endl;
@@ -105,10 +118,70 @@ bool host_app::get_user_input(void)
             correctness = true;
     } catch (const std::invalid_argument&) {
         if ((input_value.length() == 1) && (input_value[0] == 'q')) {
-            users_choice = 113U;
+            users_choice = 13U;
             correctness = true;
         }
     }
     
     return correctness;
+}
+
+void host_app::parse_command(void)
+{
+    if (!get_user_input()) {
+        cerr << "Error input value, please try again." << endl;
+        return;
+    }
+
+    // calls the corresponding function by users input
+    (this->*func_table[users_choice])();
+}
+
+void host_app::write_getver_cmd(void)
+{
+    tx_buffer[0] = 0x50;
+    tx_cmd_len = 1U;
+}
+
+void host_app::write_gethelp_cmd(void)
+{
+    tx_buffer[0] = 0x51;
+    tx_cmd_len = 1U;
+}
+
+void host_app::write_getcid_cmd(void)
+{
+    tx_buffer[0] = 0x52;
+    tx_cmd_len = 1U;
+}
+
+void host_app::write_get_read_prot_cmd(void)
+{
+    tx_buffer[0] = 053;
+    tx_cmd_len = 1U;
+}
+
+uint32_t host_app::get_crc(uint8_t *pBuf, uint32_t length)
+{
+    uint32_t crc_value = 0xFFFFFFFF;
+    for (uint32_t i = 0; i < length; i++) {
+        crc_value ^= pBuf[i];
+        for (uint32_t index = 0; index < 32U; index++) {
+            if (crc_value & 0x80000000)
+                crc_value = (crc_value << 1) ^ 0x04C11DB7;
+            else
+                crc_value = (crc_value << 1);
+        }
+    }
+    return crc_value;
+}
+
+void host_app::append_crc(uint8_t *pBuf, uint32_t length)
+{
+    int_or_chars crc_value;
+    crc_value.int_value = get_crc(pBuf, length);
+    pBuf[length + 0] = crc_value.ch_array[0];
+    pBuf[length + 1] = crc_value.ch_array[1];
+    pBuf[length + 2] = crc_value.ch_array[2];
+    pBuf[length + 3] = crc_value.ch_array[3];
 }
