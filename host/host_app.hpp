@@ -29,12 +29,21 @@ public:
     uint8_t rx_buffer[RX_BUFFER_LEN];
     uint32_t tx_cmd_len;
     uint32_t rx_cmd_len;
-    functionpointer func_table[12];
+    functionpointer func_table[13];
 
     void write_getver_cmd(void);
     void write_gethelp_cmd(void);
     void write_getcid_cmd(void);
     void write_get_read_prot_cmd(void);
+    void write_goto_addr_cmd(void);
+    void write_erase_flash_section_cmd(void);
+    void write_mem_read_cmd(void);
+    void write_mem_write_cmd(void);
+    void write_en_rw_prot_cmd(void);
+    void write_dis_rw_prot_cmd(void);
+    void write_read_sector_status_cmd(void);
+    void write_read_otp_cmd(void);
+
     uint32_t get_crc(uint8_t *pBuf, uint32_t length);
     void append_crc(uint8_t *pBuf, uint32_t length);
         
@@ -72,11 +81,19 @@ host_app::host_app(string portname)
         throw std::runtime_error("Error configuring tty settings");
     }
 
-    func_table[0] = NULL;
-    func_table[1] = &host_app::write_getver_cmd;
-    func_table[2] = &host_app::write_gethelp_cmd;
-    func_table[3] = &host_app::write_getcid_cmd;
-    func_table[4] = &host_app::write_get_read_prot_cmd;
+    func_table[0]  = NULL;
+    func_table[1]  = &host_app::write_getver_cmd;
+    func_table[2]  = &host_app::write_gethelp_cmd;
+    func_table[3]  = &host_app::write_getcid_cmd;
+    func_table[4]  = &host_app::write_get_read_prot_cmd;
+    func_table[5]  = &host_app::write_goto_addr_cmd;
+    func_table[6]  = &host_app::write_erase_flash_section_cmd;
+    func_table[7]  = &host_app::write_mem_read_cmd;
+    func_table[8]  = &host_app::write_mem_write_cmd;
+    func_table[9]  = &host_app::write_en_rw_prot_cmd;
+    func_table[10] = &host_app::write_dis_rw_prot_cmd;
+    func_table[11] = &host_app::write_read_sector_status_cmd;
+    func_table[12] = &host_app::write_read_otp_cmd;
 
     cout << "Welcome for using STM32F4bootloader !" << endl;
     cout << endl;
@@ -135,6 +152,7 @@ void host_app::parse_command(void)
 
     // calls the corresponding function by users input
     (this->*func_table[users_choice])();
+    append_crc(tx_buffer, tx_cmd_len);
 }
 
 void host_app::write_getver_cmd(void)
@@ -155,9 +173,76 @@ void host_app::write_getcid_cmd(void)
     tx_cmd_len = 1U;
 }
 
+
+/**
+ *  1 byte
+ * |      |
+ * | 0x53 |
+ * |      |
+ */
 void host_app::write_get_read_prot_cmd(void)
 {
-    tx_buffer[0] = 053;
+    tx_buffer[0] = 0x53;
+    tx_cmd_len = 1U;
+}
+
+/**
+ *  1 byte      4 bytes
+ * |      |                 |
+ * | 0x54 | jumping address |
+ * |      |                 |
+ */
+void host_app::write_goto_addr_cmd(void)
+{
+    tx_buffer[0] = 0x54;
+    int_or_chars jump_addr;
+    cout << "What is the address you want to jump to ?" << endl;
+    cin >> jump_addr.int_value;
+    for (uint32_t i = 0U; i < 4U; i++) {
+        tx_buffer[i + 1U] = jump_addr.ch_array[i];
+    }
+    tx_cmd_len = 5U;
+}
+
+void host_app::write_erase_flash_section_cmd(void)
+{
+    tx_buffer[0] = 0x55;
+    tx_cmd_len = 1U;
+}
+
+void host_app::write_mem_read_cmd(void)
+{
+    tx_buffer[0] = 0x56;
+    tx_cmd_len = 1U;
+}
+
+void host_app::write_mem_write_cmd(void)
+{
+    tx_buffer[0] = 0x57;
+    tx_cmd_len = 1U;
+}
+
+void host_app::write_en_rw_prot_cmd(void)
+{
+    tx_buffer[0] = 0x58;
+    tx_cmd_len = 1U;
+}
+
+void host_app::write_dis_rw_prot_cmd(void)
+{
+    tx_buffer[0] = 0x59;
+    tx_cmd_len = 1U;
+}
+
+void host_app::write_read_sector_status_cmd(void)
+{
+    tx_buffer[0] = 0x5A;
+    tx_cmd_len = 1U;
+}
+
+void host_app::write_read_otp_cmd(void)
+{
+    tx_buffer[0] = 0x5B;
     tx_cmd_len = 1U;
 }
 
@@ -180,8 +265,7 @@ void host_app::append_crc(uint8_t *pBuf, uint32_t length)
 {
     int_or_chars crc_value;
     crc_value.int_value = get_crc(pBuf, length);
-    pBuf[length + 0] = crc_value.ch_array[0];
-    pBuf[length + 1] = crc_value.ch_array[1];
-    pBuf[length + 2] = crc_value.ch_array[2];
-    pBuf[length + 3] = crc_value.ch_array[3];
+    for (uint32_t i = 0U; i < 4U; i++) {
+        pBuf[length + i] = crc_value.ch_array[i];
+    }
 }
