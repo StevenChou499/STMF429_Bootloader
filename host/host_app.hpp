@@ -157,20 +157,23 @@ void host_app::parse_command(void)
 
 void host_app::write_getver_cmd(void)
 {
-    tx_buffer[0] = 0x50;
-    tx_cmd_len = 1U;
+    tx_buffer[0] = 0x1;
+    tx_buffer[1] = 0x50;
+    tx_cmd_len = 2U;
 }
 
 void host_app::write_gethelp_cmd(void)
 {
-    tx_buffer[0] = 0x51;
-    tx_cmd_len = 1U;
+    tx_buffer[0] = 0x1;
+    tx_buffer[1] = 0x51;
+    tx_cmd_len = 2U;
 }
 
 void host_app::write_getcid_cmd(void)
 {
-    tx_buffer[0] = 0x52;
-    tx_cmd_len = 1U;
+    tx_buffer[0] = 0x1;
+    tx_buffer[2] = 0x52;
+    tx_cmd_len = 2U;
 }
 
 
@@ -182,8 +185,9 @@ void host_app::write_getcid_cmd(void)
  */
 void host_app::write_get_read_prot_cmd(void)
 {
-    tx_buffer[0] = 0x53;
-    tx_cmd_len = 1U;
+    tx_buffer[0] = 0x1;
+    tx_buffer[1] = 0x53;
+    tx_cmd_len = 2U;
 }
 
 /**
@@ -194,50 +198,130 @@ void host_app::write_get_read_prot_cmd(void)
  */
 void host_app::write_goto_addr_cmd(void)
 {
-    tx_buffer[0] = 0x54;
     int_or_chars jump_addr;
     cout << "What is the address you want to jump to ?" << endl;
     cin >> jump_addr.int_value;
+    
+    tx_buffer[0] = 0x5;
+    tx_buffer[1] = 0x54;
     for (uint32_t i = 0U; i < 4U; i++) {
         tx_buffer[i + 1U] = jump_addr.ch_array[i];
     }
-    tx_cmd_len = 5U;
+    tx_cmd_len = 6U;
 }
 
+/**
+ *  1 byte  1 byte   1 byte
+ * |      |        | number |
+ * | 0x55 | sector |   of   |
+ * |      |   no.  | sector |
+ */
 void host_app::write_erase_flash_section_cmd(void)
 {
-    tx_buffer[0] = 0x55;
-    tx_cmd_len = 1U;
+    uint32_t sector_number;
+    uint32_t number_of_sectors;
+    cout << "What is the starting sector you want to erase? : " << endl;
+    cin >> sector_number;
+    cout << "How many sectors you want to erase? : " << endl;
+    cin >> number_of_sectors;
+
+    tx_buffer[0] = 0x3;
+    tx_buffer[1] = 0x55;
+    tx_buffer[2] = sector_number;
+    tx_buffer[3] = number_of_sectors;
+    tx_cmd_len = 4U;
 }
 
+/**
+ *  1 byte     4 byte     1 byte
+ * |      |              |      |
+ * | 0x56 | base address | read |
+ * |      |              | len  |
+ */
 void host_app::write_mem_read_cmd(void)
 {
-    tx_buffer[0] = 0x56;
-    tx_cmd_len = 1U;
+    int_or_chars base_address;
+    uint32_t read_length;
+    cout << "What is the address you want to read? : " << endl;
+    cin >> base_address.int_value;
+    cout << "What is the reading length? (Max 255) : " << endl;
+    cin >> read_length;
+
+    tx_buffer[0] = 0x6;
+    tx_buffer[1] = 0x56;
+    for (uint32_t i = 0U; i < 4U; i++) {
+        tx_buffer[i + 2U] = base_address.ch_array[i];
+    }
+    tx_buffer[6] = read_length;
+    tx_cmd_len = 7U;
 }
 
 void host_app::write_mem_write_cmd(void)
 {
+    int_or_chars base_address;
+    uint32_t length;
+    tx_buffer[0] = 0x1;
     tx_buffer[0] = 0x57;
-    tx_cmd_len = 1U;
+    tx_cmd_len = 2U;
 }
 
+/**
+ *  1 byte 1 byte 1 byte
+ * |      | prot |      |
+ * | 0x58 |  or  | r/w  |
+ * |      | not  | prot |
+ */
 void host_app::write_en_rw_prot_cmd(void)
 {
-    tx_buffer[0] = 0x58;
-    tx_cmd_len = 1U;
+    uint32_t protect_or_not = 0U;
+    uint32_t protection_mode = 0U;
+    uint8_t r_or_w;
+    for (uint32_t i = 0U; i < 8U; i++) {
+        uint8_t yes_or_no;
+        cout << "Do you want to enable protection for sector " << i << "? (Y/N): ";
+        cin >> yes_or_no;
+        if (yes_or_no == 'N' || yes_or_no == 'n')
+            continue;
+        protect_or_not |= (1U << i);
+    }
+    cout << "Do you want to enable write or r/w protection?" << endl;
+    cout << "(R: Read-Write/ W:Write): " << endl;
+    cin >> r_or_w;
+    if (r_or_w == 'W' || r_or_w == 'w')
+        protection_mode = 1U;
+    else
+        protection_mode = 2U;
+    tx_buffer[0] = 3U;
+    tx_buffer[1] = 0x58;
+    tx_buffer[2] = protect_or_not;
+    tx_buffer[3] = protection_mode;
+    tx_cmd_len = 4U;
 }
 
+/**
+ *  1 byte
+ * |      |
+ * | 0x59 |
+ * |      |
+ */
 void host_app::write_dis_rw_prot_cmd(void)
 {
-    tx_buffer[0] = 0x59;
-    tx_cmd_len = 1U;
+    tx_buffer[0] = 0x1;
+    tx_buffer[1] = 0x59;
+    tx_cmd_len = 2U;
 }
 
+/**
+ *  1 byte
+ * |      |
+ * | 0x5A |
+ * |      |
+ */
 void host_app::write_read_sector_status_cmd(void)
 {
-    tx_buffer[0] = 0x5A;
-    tx_cmd_len = 1U;
+    tx_buffer[0] = 0x1;
+    tx_buffer[1] = 0x5A;
+    tx_cmd_len = 2U;
 }
 
 void host_app::write_read_otp_cmd(void)
