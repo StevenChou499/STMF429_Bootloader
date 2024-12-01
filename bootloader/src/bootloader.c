@@ -55,6 +55,10 @@ void parse_bootloader_cmd(void)
             myprintf("Received a command ask for chip id!\r\n");
             bootloader_handle_getcid_cmd(recv_buf, cmd_len);
             break;
+        case BL_GET_RDP_STATUS_CMD:
+            myprintf("Received a command ask for read protection status!\r\n");
+            bootloader_handle_getrdp_status_cmd(recv_buf, cmd_len);
+            break;
         default:
             myprintf("Unknown command\r\n");
             break;
@@ -103,7 +107,18 @@ void bootloader_handle_getcid_cmd(unsigned char *rx_buffer, unsigned int cmd_len
     }
 }
 
-
+void bootloader_handle_getrdp_status_cmd(unsigned char *rx_buffer, unsigned int cmd_len)
+{
+    if (CRC_ERROR == CRC32_verify(rx_buffer, cmd_len)) {
+        myprintf("Incorrect CRC!\r\n");
+        bootloader_send_nack();
+    } else {
+        myprintf("Correct CRC!\r\n");
+        bootloader_send_ack();
+        unsigned int rdp_status = get_rdp_status();
+        UART3_Transmit((char *) &rdp_status, 4U);
+    }
+}
 
 unsigned char get_bootloader_version(void)
 {
@@ -112,9 +127,13 @@ unsigned char get_bootloader_version(void)
 
 unsigned int get_mcu_chip_id(void)
 {
-    // unsigned int id_code = *(volatile unsigned int *)(DBGMCU_IDCODE_ADDR) & 0xFFF;
     unsigned int id_code = *(volatile unsigned int *)(DBGMCU_IDCODE_ADDR);
     return id_code;
+}
+
+unsigned int get_rdp_status(void)
+{
+    return 0xFFFFFFFF;
 }
 
 

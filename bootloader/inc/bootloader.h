@@ -29,8 +29,10 @@ void parse_bootloader_cmd(void);
 void bootloader_handle_getver_cmd(unsigned char *rx_buffer, unsigned int cmd_len);
 void bootloader_handle_gethelp_cmd(unsigned char *rx_buffer, unsigned int cmd_len);
 void bootloader_handle_getcid_cmd(unsigned char *rx_buffer, unsigned int cmd_len);
+void bootloader_handle_getrdp_status_cmd(unsigned char *rx_buffer, unsigned int cmd_len);
 unsigned char get_bootloader_version(void);
 unsigned int get_mcu_chip_id(void);
+unsigned int get_rdp_status(void);
 
 void bootloader_send_ack(void);
 void bootloader_send_nack(void);
