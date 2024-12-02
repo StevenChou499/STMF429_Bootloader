@@ -1,7 +1,7 @@
-#include "uart.h"
-#include "myprintf.h"
-#include "bootloader.h"
-#include "crc.h"
+#include "../inc/uart.h"
+#include "../inc/myprintf.h"
+#include "../inc/bootloader.h"
+#include "../inc/crc.h"
 
 btldr_strct_t btldr_strct = {
     .btldr_version = VERSION,
@@ -89,8 +89,8 @@ void bootloader_handle_gethelp_cmd(unsigned char *rx_buffer, unsigned int cmd_le
     } else {
         myprintf("Correct CRC!\r\n");
         bootloader_send_ack();
-        unsigned int length = strlen(btldr_strct.btldr_help_msg);
-        UART3_Transmit(btldr_strct.btldr_help_msg, length);
+        unsigned int length = strlen((char *) btldr_strct.btldr_help_msg);
+        UART3_Transmit((unsigned char *) btldr_strct.btldr_help_msg, length);
     }
 }
 
@@ -103,7 +103,7 @@ void bootloader_handle_getcid_cmd(unsigned char *rx_buffer, unsigned int cmd_len
         myprintf("Correct CRC!\r\n");
         bootloader_send_ack();
         unsigned int id_code = get_mcu_chip_id();
-        UART3_Transmit((char *) &id_code, 4U);
+        UART3_Transmit((unsigned char *) &id_code, 4U);
     }
 }
 
@@ -116,7 +116,7 @@ void bootloader_handle_getrdp_status_cmd(unsigned char *rx_buffer, unsigned int 
         myprintf("Correct CRC!\r\n");
         bootloader_send_ack();
         unsigned int rdp_status = get_rdp_status();
-        UART3_Transmit((char *) &rdp_status, 4U);
+        UART3_Transmit((unsigned char *) &rdp_status, 4U);
     }
 }
 

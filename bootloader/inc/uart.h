@@ -58,12 +58,12 @@
 
 void UART2_Init(void);
 
-void UART2_Transmit(const char *buf, int len);
+void UART2_Transmit(const unsigned char *buf, int len);
 
-void UART2_Receive(char *buf, int len);
+void UART2_Receive(unsigned char *buf, int len);
 
 void UART3_Init(void);
 
-void UART3_Transmit(const char *buf, int len);
+void UART3_Transmit(const unsigned char *buf, int len);
 
-void UART3_Receive(char *buf, int len);
+void UART3_Receive(unsigned char *buf, int len);

@@ -1,0 +1,4 @@
+.vscode
+build/*
+host/host_app.o
+host/host_app

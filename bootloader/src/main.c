@@ -1,7 +1,8 @@
-#include "gpio.h"
-#include "uart.h"
-#include "crc.h"
-#include "bootloader.h"
+#include "../inc/gpio.h"
+#include "../inc/uart.h"
+#include "../inc/crc.h"
+#include "../inc/bootloader.h"
+#include "../inc/myprintf.h"
 
 int main()
 {

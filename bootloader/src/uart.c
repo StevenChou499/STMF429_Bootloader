@@ -1,4 +1,4 @@
-#include "uart.h"
+#include "../inc/uart.h"
 
 void UART2_Init(void)
 {
@@ -18,7 +18,7 @@ void UART2_Init(void)
     *((volatile int *) USART2_CR1) |= USART_EN; // enable USART2
 }
 
-void UART2_Transmit(const char *buf, int len)
+void UART2_Transmit(const unsigned char *buf, int len)
 {
     for (int i = 0; i < len; i++) {
         while (!((*(volatile int *) USART2_SR) & USART_TXE));
@@ -27,7 +27,7 @@ void UART2_Transmit(const char *buf, int len)
     }
 }
 
-void UART2_Receive(char *buf, int len)
+void UART2_Receive(unsigned char *buf, int len)
 {
     for (int i = 0; i < len; i++) {
         while (!(*((volatile int *) USART2_SR) & USART_RXNE));
@@ -53,7 +53,7 @@ void UART3_Init(void)
     *((volatile int *) USART3_CR1) |= USART_EN; // enable USART3
 }
 
-void UART3_Transmit(const char *buf, int len)
+void UART3_Transmit(const unsigned char *buf, int len)
 {
     for (int i = 0; i < len; i++) {
         while (!((*(volatile int *) USART3_SR) & USART_TXE));
@@ -62,7 +62,7 @@ void UART3_Transmit(const char *buf, int len)
     }
 }
 
-void UART3_Receive(char *buf, int len)
+void UART3_Receive(unsigned char *buf, int len)
 {
     for (int i = 0; i < len; i++) {
         while (!(*((volatile int *) USART3_SR) & USART_RXNE));
