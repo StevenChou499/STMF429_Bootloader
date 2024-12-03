@@ -1,13 +1,15 @@
 include ../toolchain.mk
 
-CPP_SRC = host_app.cpp
+CPP_SRC = main.cpp \
+          host_app.cpp
 
 CPP_INC = -I/host_app.hpp
 
 CPP_FLAGS = -Wall \
             -g
 
-OBJS = host_app.o
+OBJS = host_app.o \
+       main.o
 
 all: $(OUT)/$(BIN)
 

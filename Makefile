@@ -23,11 +23,10 @@ $(HOST_TARGET):
 
 debug:
 	$(DB) $(BL_TARGET)
-	openocd -f board/st_nucleo_f4.cfg
 
 clean:
 	$(RM) -r $(BUILD_DIR)
-	$(RM) $(HOST_TARGET).o
+	$(RM) $(HOST_DIR)/*.o
 	$(RM) $(HOST_TARGET)
 
-.PHONY: all $(BL_TARGET) debug clean	
+.PHONY: all btldr host $(BL_TARGET) $(HOST_TARGET) debug clean	
