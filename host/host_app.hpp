@@ -43,6 +43,7 @@ public:
 
     uint32_t get_crc(uint8_t *pBuf, uint32_t length);
     void append_crc(uint8_t *pBuf, uint32_t length);
+    void r_read(uint8_t *pBuf, uint32_t length);
         
         
 public:
@@ -51,4 +52,5 @@ public:
     void show_prompt(void);
     bool get_user_input(void);
     void parse_command(void);
+    void get_bootloader_respond(void);
 };

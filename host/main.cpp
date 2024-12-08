@@ -7,6 +7,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <stdint.h>
+// #include <conio.h>
 using namespace std;
 
 int main()
@@ -19,6 +20,10 @@ int main()
     while (1) {
         btldr_app.show_prompt();
         btldr_app.parse_command();
+        btldr_app.get_bootloader_respond();
+        cout << "Please enter any key to continue..." << endl;
+        cin.get();
+        cin.get();
 
         // uint8_t cmd_len = 1;
         // write(btldr_app.mcu_fd, &cmd_len, 1);

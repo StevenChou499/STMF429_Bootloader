@@ -47,7 +47,6 @@ host_app::host_app(string portname)
     func_table[12] = &host_app::write_read_otp_cmd;
 
     cout << "Welcome for using STM32F4bootloader !" << endl;
-    cout << endl;
 }
 
 host_app::~host_app()
@@ -58,6 +57,7 @@ host_app::~host_app()
 
 void host_app::show_prompt(void)
 {
+    cout << endl;
     cout << "Bootloader command options: " << endl;
     cout << "Get bootloader version                :  1" << endl;
     cout << "Get bootloader help message           :  2" << endl;
@@ -72,6 +72,7 @@ void host_app::show_prompt(void)
     cout << "Read sector status                    : 11" << endl;
     cout << "Read one time programmable memory     : 12" << endl;
     cout << "quit                                  :  q" << endl;
+    cout << "Please enter a command: ";
 }
 
 bool host_app::get_user_input(void)
@@ -112,6 +113,7 @@ void host_app::write_getver_cmd(void)
     tx_buffer[0] = 0x1;
     tx_buffer[1] = 0x50;
     tx_cmd_len = 2U;
+    cout << "Asking for bootloader command..." << endl;
 }
 
 void host_app::write_gethelp_cmd(void)
@@ -119,6 +121,7 @@ void host_app::write_gethelp_cmd(void)
     tx_buffer[0] = 0x1;
     tx_buffer[1] = 0x51;
     tx_cmd_len = 2U;
+    cout << "Asking for help..." << endl;
 }
 
 void host_app::write_getcid_cmd(void)
@@ -126,6 +129,7 @@ void host_app::write_getcid_cmd(void)
     tx_buffer[0] = 0x1;
     tx_buffer[2] = 0x52;
     tx_cmd_len = 2U;
+    cout << "Asking for chip id..." << endl;
 }
 
 
@@ -140,6 +144,7 @@ void host_app::write_get_read_prot_cmd(void)
     tx_buffer[0] = 0x1;
     tx_buffer[1] = 0x53;
     tx_cmd_len = 2U;
+    cout << "Asking for read protection status..." << endl;
 }
 
 /**
@@ -160,6 +165,7 @@ void host_app::write_goto_addr_cmd(void)
         tx_buffer[i + 1U] = jump_addr.ch_array[i];
     }
     tx_cmd_len = 6U;
+    cout << "Asking for jumping..." << endl;
 }
 
 /**
@@ -303,5 +309,38 @@ void host_app::append_crc(uint8_t *pBuf, uint32_t length)
     crc_value.int_value = get_crc(pBuf, length);
     for (uint32_t i = 0U; i < 4U; i++) {
         pBuf[length + i] = crc_value.ch_array[i];
+    }
+}
+
+void host_app::r_read(uint8_t *pBuf, uint32_t length)
+{
+    uint32_t total_read_bytes = 0U;
+    while (total_read_bytes < length) {
+        int bytes_read = read(mcu_fd, 
+                              pBuf + total_read_bytes, 
+                              length - total_read_bytes);
+        total_read_bytes += bytes_read;
+    }
+}
+
+void host_app::get_bootloader_respond(void)
+{
+    // read(mcu_fd, rx_buffer, 1);
+    r_read(rx_buffer, 1);
+    uint8_t ack_or_nack = rx_buffer[0];
+    if (ack_or_nack == 0xC) {
+        cerr << "CRC Error!" << endl << "Please try again" << endl;
+        return;
+    }
+    switch (current_cmd) {
+        case 0x1:
+            uint8_t btldr_version;
+            // read(mcu_fd, rx_buffer + 1, 1);
+            r_read(rx_buffer + 1, 1);
+            btldr_version = rx_buffer[1];
+            cout << "Bootloader version is ver." << (uint32_t) btldr_version << endl << endl;
+            break;
+        default:
+            break;
     }
 }
