@@ -5,12 +5,7 @@
 #define TX_BUFFER_LEN (1024U)
 #define RX_BUFFER_LEN (128U)
 
-using std::string, 
-      std::cin, 
-      std::cout, 
-      std::cerr, 
-      std::hex, 
-      std::endl;
+using std::string;
     
 typedef union {
     uint32_t int_value;
@@ -51,6 +46,6 @@ public:
     ~host_app();
     void show_prompt(void);
     bool get_user_input(void);
-    void parse_command(void);
+    bool parse_command(void);
     void get_bootloader_respond(void);
 };

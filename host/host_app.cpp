@@ -7,6 +7,12 @@
 #include <iostream>
 #include <termios.h>
 
+using std::cin, 
+      std::cout, 
+      std::cerr, 
+      std::hex, 
+      std::endl;
+
 host_app::host_app(string portname)
 {
     mcu_fd = open(portname.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
@@ -95,17 +101,20 @@ bool host_app::get_user_input(void)
     return correctness;
 }
 
-void host_app::parse_command(void)
+bool host_app::parse_command(void)
 {
     if (!get_user_input()) {
         cerr << "Error input value, please try again." << endl;
-        return;
+        return true;
     }
 
     // calls the corresponding function by users input
+    if (current_cmd == 13U)
+        return false;
     (this->*func_table[current_cmd])();
     append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
     write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
+    return true;
 }
 
 void host_app::write_getver_cmd(void)
@@ -127,7 +136,7 @@ void host_app::write_gethelp_cmd(void)
 void host_app::write_getcid_cmd(void)
 {
     tx_buffer[0] = 0x1;
-    tx_buffer[2] = 0x52;
+    tx_buffer[1] = 0x52;
     tx_cmd_len = 2U;
     cout << "Asking for chip id..." << endl;
 }
@@ -335,12 +344,27 @@ void host_app::get_bootloader_respond(void)
     switch (current_cmd) {
         case 0x1:
             uint8_t btldr_version;
-            // read(mcu_fd, rx_buffer + 1, 1);
             r_read(rx_buffer + 1, 1);
             btldr_version = rx_buffer[1];
             cout << "Bootloader version is ver." << (uint32_t) btldr_version << endl << endl;
             break;
+        case 0x2:
+            uint8_t help_msg[600];
+            r_read(help_msg, 572);
+            help_msg[572] = '\0';
+            cout << endl << "Prompt message: " << endl;
+            cout << help_msg << endl;
+            break;
+        case 0x3:
+            uint16_t revision_id, device_id;
+            r_read(rx_buffer + 1, 4);
+            revision_id = *(uint16_t *)(rx_buffer + 3);
+            device_id = *(uint16_t *)(rx_buffer + 1) & 0xFFF;
+            cout << "The chip revision id is " << hex << revision_id
+                 << ", and the device id is " << hex << device_id << endl;
+            break;
         default:
+            cout << "Unknown command!" << endl;
             break;
     }
 }

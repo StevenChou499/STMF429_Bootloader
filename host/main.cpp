@@ -19,9 +19,10 @@ int main()
 
     while (1) {
         btldr_app.show_prompt();
-        btldr_app.parse_command();
+        if (btldr_app.parse_command() == false)
+            break;
         btldr_app.get_bootloader_respond();
-        cout << "Please enter any key to continue..." << endl;
+        cout << "Please press enter to continue..." << endl;
         cin.get();
         cin.get();
 
