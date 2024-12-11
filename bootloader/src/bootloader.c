@@ -133,7 +133,15 @@ unsigned int get_mcu_chip_id(void)
 
 unsigned int get_rdp_status(void)
 {
-    return 0xFFFFFFFF;
+    unsigned int rdp_option_bytes = *(volatile unsigned int *)(0x1FFFC000);
+    rdp_option_bytes = (rdp_option_bytes & 0x0000FF00) >> 8;
+    if (rdp_option_bytes == 0xAA) {
+        return 0;
+    } else if (rdp_option_bytes == 0xCC) {
+        return 2;
+    } else {
+        return 1;
+    }
 }
 
 

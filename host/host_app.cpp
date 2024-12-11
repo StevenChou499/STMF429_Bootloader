@@ -363,6 +363,12 @@ void host_app::get_bootloader_respond(void)
             cout << "The chip revision id is " << hex << revision_id
                  << ", and the device id is " << hex << device_id << endl;
             break;
+        case 0x4:
+            uint32_t rdp_status;
+            r_read(rx_buffer + 1, 4);
+            rdp_status = *(uint32_t *)(rx_buffer + 1);
+            cout << "The read protection level is " << rdp_status << endl;
+            break;
         default:
             cout << "Unknown command!" << endl;
             break;
