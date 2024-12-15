@@ -187,9 +187,9 @@ void host_app::write_erase_flash_section_cmd(void)
 {
     uint32_t sector_number;
     uint32_t number_of_sectors;
-    cout << "What is the starting sector you want to erase? : " << endl;
+    cout << "What is the starting sector you want to erase? : ";
     cin >> sector_number;
-    cout << "How many sectors you want to erase? : " << endl;
+    cout << "How many sectors you want to erase? : ";
     cin >> number_of_sectors;
 
     tx_buffer[0] = 0x3;
@@ -368,6 +368,18 @@ void host_app::get_bootloader_respond(void)
             r_read(rx_buffer + 1, 4);
             rdp_status = *(uint32_t *)(rx_buffer + 1);
             cout << "The read protection level is " << rdp_status << endl;
+            break;
+        case 0x5:
+            break;
+        case 0x6:
+            uint8_t erase_result;
+            r_read(rx_buffer + 1, 1);
+            erase_result = rx_buffer[1];
+            if (erase_result == 0x1) {
+                cout << "Flash erase successfull!" << endl;
+            } else {
+                cout << "Flash erase failed!" << endl;
+            }
             break;
         default:
             cout << "Unknown command!" << endl;

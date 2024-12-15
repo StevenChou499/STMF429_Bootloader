@@ -4,7 +4,7 @@
 
 #define DBGMCU_IDCODE_ADDR        (0xE0042000U)
 
-typedef enum BL_CMD_t {
+typedef enum BL_CMD {
     BL_GET_VER_CMD            = 0x50,
     BL_GET_HELP_CMD           = 0x51,
     BL_GET_CID_CMD            = 0x52,
@@ -17,7 +17,7 @@ typedef enum BL_CMD_t {
     BL_DIS_RW_PROTECTION_CMD  = 0x59,
     BL_READ_SECTOR_STATUS_CMD = 0x5A,
     BL_OTP_READ_CMD           = 0x5B,
-} BL_CMD;
+} BL_CMD_t;
 
 typedef struct {
     unsigned char  btldr_version;
@@ -30,6 +30,8 @@ void bootloader_handle_getver_cmd(unsigned char *rx_buffer, unsigned int cmd_len
 void bootloader_handle_gethelp_cmd(unsigned char *rx_buffer, unsigned int cmd_len);
 void bootloader_handle_getcid_cmd(unsigned char *rx_buffer, unsigned int cmd_len);
 void bootloader_handle_getrdp_status_cmd(unsigned char *rx_buffer, unsigned int cmd_len);
+void bootloader_handle_goaddr_cmd(unsigned char *rx_buffer, unsigned int cmd_len);
+void bootloader_handle_flash_erase_cmd(unsigned char *rx_buffer, unsigned int cmd_len);
 unsigned char get_bootloader_version(void);
 unsigned int get_mcu_chip_id(void);
 unsigned int get_rdp_status(void);

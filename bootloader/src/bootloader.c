@@ -2,6 +2,7 @@
 #include "../inc/myprintf.h"
 #include "../inc/bootloader.h"
 #include "../inc/crc.h"
+#include "../inc/flash.h"
 
 btldr_strct_t btldr_strct = {
     .btldr_version = VERSION,
@@ -58,6 +59,14 @@ void parse_bootloader_cmd(void)
         case BL_GET_RDP_STATUS_CMD:
             myprintf("Received a command ask for read protection status!\r\n");
             bootloader_handle_getrdp_status_cmd(recv_buf, cmd_len);
+            break;
+        case BL_GET_GO_TO_ADDR_CMD:
+            myprintf("Received a command jumping to specific address!\r\n");
+            bootloader_handle_goaddr_cmd(recv_buf, cmd_len);
+            break;
+        case BL_FLASH_ERASE_CMD:
+            myprintf("Received a command ask to erase flash!\r\n");
+            bootloader_handle_flash_erase_cmd(recv_buf, cmd_len);
             break;
         default:
             myprintf("Unknown command\r\n");
@@ -120,6 +129,26 @@ void bootloader_handle_getrdp_status_cmd(unsigned char *rx_buffer, unsigned int 
     }
 }
 
+void bootloader_handle_goaddr_cmd(unsigned char *rx_buffer, unsigned int cmd_len)
+{
+    return;
+}
+
+void bootloader_handle_flash_erase_cmd(unsigned char *rx_buffer, unsigned int cmd_len)
+{
+    if (CRC_ERROR == CRC32_verify(rx_buffer, cmd_len)) {
+        myprintf("Incorrect CRC!\r\n");
+        bootloader_send_nack();
+    } else {
+        myprintf("Correct CRC!\r\n");
+        bootloader_send_ack();
+        unsigned char starting_sector = rx_buffer[1];
+        unsigned char num_of_sectors = rx_buffer[2];
+        unsigned char erase_status = flash_seq_erase(starting_sector, num_of_sectors);
+        UART3_Transmit((unsigned char *) &erase_status, 1U);
+    }
+}
+
 unsigned char get_bootloader_version(void)
 {
     return btldr_strct.btldr_version;
@@ -136,14 +165,13 @@ unsigned int get_rdp_status(void)
     unsigned int rdp_option_bytes = *(volatile unsigned int *)(0x1FFFC000);
     rdp_option_bytes = (rdp_option_bytes & 0x0000FF00) >> 8;
     if (rdp_option_bytes == 0xAA) {
-        return 0;
+        return 0U;
     } else if (rdp_option_bytes == 0xCC) {
-        return 2;
+        return 2U;
     } else {
-        return 1;
+        return 1U;
     }
 }
-
 
 // Sending ACK and NACK format functions
 void bootloader_send_ack(void)

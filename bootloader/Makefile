@@ -5,7 +5,8 @@ C_SRC = bootloader.c \
 	    gpio.c \
 	    main.c \
 	    myprintf.c \
-	    uart.c
+	    uart.c \
+		flash.c
 
 C_INC = -I/inc/
 
