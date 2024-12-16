@@ -21,6 +21,26 @@ unsigned int flash_lock(void)
         return FLASH_FAIL;
 }
 
+unsigned int option_byte_unlock(void)
+{
+    // We need to sequentially write two key values to unlock option bytes
+    *(volatile unsigned int *)(FLASH_OPTKEYR) = OB_UNLOCK_KEY1;
+    *(volatile unsigned int *)(FLASH_OPTKEYR) = OB_UNLOCK_KEY1;
+    if (0x0 == (*(volatile unsigned int *)(FLASH_OPTCR) & (0x1U << 0)))
+        return FLASH_SUCCESS;
+    else
+        return FLASH_FAIL;
+}
+
+unsigned int option_byte_lock(void)
+{
+    *(volatile unsigned int *)(FLASH_OPTCR) |= (0x1U << 0);
+    if ((0x1U << 0) == (*(volatile unsigned int *)(FLASH_OPTCR) & (0x1U << 0)))
+        return FLASH_SUCCESS;
+    else
+        return FLASH_FAIL;
+}
+
 unsigned int flash_sec_erase(unsigned int sec_no)
 {
     if (sec_no > (FLASH_SEC_2_START + FLASH_SEC_2_NUM))
@@ -62,5 +82,19 @@ unsigned int flash_seq_erase(unsigned int start_sec, unsigned int num_sec)
     if (FLASH_FAIL == flash_lock())
         return FLASH_FAIL;
     
+    return FLASH_SUCCESS;
+}
+
+unsigned int get_sector_status(unsigned int *sector_1, unsigned int *sector_2)
+{
+    if (FLASH_FAIL == option_byte_unlock())
+        return FLASH_FAIL;
+
+    // return the flash bank 1 & 2 nWRP bits and SPRMOD bits
+    *sector_1 = *(volatile unsigned int *)(FLASH_OPTCR)  | (0x8FFF0000);
+    *sector_2 = *(volatile unsigned int *)(FLASH_OPTCR1) | (0x0FFF0000);
+
+    if (FLASH_FAIL == option_byte_lock())
+        return FLASH_FAIL;
     return FLASH_SUCCESS;
 }

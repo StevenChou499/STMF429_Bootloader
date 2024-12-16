@@ -381,6 +381,12 @@ void host_app::get_bootloader_respond(void)
                 cout << "Flash erase failed!" << endl;
             }
             break;
+        case 0xA:
+            uint32_t sector_1, sector_2;
+            r_read(rx_buffer + 1, 8);
+            sector_1 = *(uint32_t *)(rx_buffer + 1);
+            sector_2 = *(uint32_t *)(rx_buffer + 5);
+            break;
         default:
             cout << "Unknown command!" << endl;
             break;

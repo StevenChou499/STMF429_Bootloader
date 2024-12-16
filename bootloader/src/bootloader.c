@@ -68,6 +68,25 @@ void parse_bootloader_cmd(void)
             myprintf("Received a command ask to erase flash!\r\n");
             bootloader_handle_flash_erase_cmd(recv_buf, cmd_len);
             break;
+        case BL_MEM_READ_CMD:
+            myprintf("Received a command ask to read memory!\r\n");
+            break;
+        case BL_MEM_WRITE_CMD:
+            myprintf("Received a command ask to write memory!\r\n");
+            break;
+        case BL_EN_RW_PROTECTION_CMD:
+            myprintf("Received a command ask to enable r/w protection!\r\n");
+            break;
+        case BL_DIS_RW_PROTECTION_CMD:
+            myprintf("Received a command ask to disable r/w protection!\r\n");
+            break;
+        case BL_READ_SECTOR_STATUS_CMD:
+            myprintf("Received a command ask to read sector status!\r\n");
+            bootloader_handle_read_sector_status_cmd(recv_buf, cmd_len);
+            break;
+        case BL_OTP_READ_CMD:
+            myprintf("Received a command to read one time programmable memory!\r\n");
+            break;
         default:
             myprintf("Unknown command\r\n");
             break;
@@ -146,6 +165,20 @@ void bootloader_handle_flash_erase_cmd(unsigned char *rx_buffer, unsigned int cm
         unsigned char num_of_sectors = rx_buffer[2];
         unsigned char erase_status = flash_seq_erase(starting_sector, num_of_sectors);
         UART3_Transmit((unsigned char *) &erase_status, 1U);
+    }
+}
+
+void bootloader_handle_read_sector_status_cmd(unsigned char *rx_buffer, unsigned int cmd_len)
+{
+    if (CRC_ERROR == CRC32_verify(rx_buffer, cmd_len)) {
+        myprintf("Incorrect CRC!\r\n");
+        bootloader_send_nack();
+    } else {
+        myprintf("Correct CRC!\r\n");
+        bootloader_send_ack();
+        unsigned int sector_status[2];
+        get_sector_status(sector_status, sector_status + 1);
+        UART3_Transmit((unsigned char *) sector_status, 8);
     }
 }
 
