@@ -1,6 +1,6 @@
 #include "../inc/flash.h"
 
-unsigned int  flash_unlock(void)
+unsigned int flash_unlock(void)
 {
     // We need to sequentially write two key values to unlock the flash
     *(volatile unsigned int *)(FLASH_KEYR) = FLASH_UNLOCK_KEY1;
@@ -25,7 +25,7 @@ unsigned int option_byte_unlock(void)
 {
     // We need to sequentially write two key values to unlock option bytes
     *(volatile unsigned int *)(FLASH_OPTKEYR) = OB_UNLOCK_KEY1;
-    *(volatile unsigned int *)(FLASH_OPTKEYR) = OB_UNLOCK_KEY1;
+    *(volatile unsigned int *)(FLASH_OPTKEYR) = OB_UNLOCK_KEY2;
     if (0x0 == (*(volatile unsigned int *)(FLASH_OPTCR) & (0x1U << 0)))
         return FLASH_SUCCESS;
     else
