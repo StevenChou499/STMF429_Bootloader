@@ -386,6 +386,27 @@ void host_app::get_bootloader_respond(void)
             r_read(rx_buffer + 1, 8);
             sector_1 = *(uint32_t *)(rx_buffer + 1);
             sector_2 = *(uint32_t *)(rx_buffer + 5);
+            if (sector_1 & 0x80000000) {
+                // PCROP disabled. nWPRi bits are for write protection
+                for (int i = 0; i < 12; i++) {
+                    cout << "Sector " << i << " write protection: " << 
+                    (sector_1 & (1U << (i + 16))) ? "Enable" : "Disable" << endl;
+                }
+                for (int i = 0; i < 12; i++) {
+                    cout << "Sector " << i + 12 << " write protection: " << 
+                    (sector_1 & (1U << (i + 16))) ? "Enable" : "Disable" << endl;
+                }
+            } else {
+                // PCROP enabled. nWPRi bits are for PCROP protection
+                for (int i = 0; i < 12; i++) {
+                    cout << "Sector " << i << " PCROP protection: " << 
+                    (sector_1 & (1U << (i + 16))) ? "Enable" : "Disable" << endl;
+                }
+                for (int i = 0; i < 12; i++) {
+                    cout << "Sector " << i + 12 << " PCROP protection: " << 
+                    (sector_1 & (1U << (i + 16))) ? "Enable" : "Disable" << endl;
+                }
+            }
             break;
         default:
             cout << "Unknown command!" << endl;
