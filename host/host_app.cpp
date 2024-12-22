@@ -241,29 +241,29 @@ void host_app::write_mem_write_cmd(void)
  */
 void host_app::write_en_rw_prot_cmd(void)
 {
-    uint32_t protect_or_not = 0U;
-    uint32_t protection_mode = 0U;
+    uint32_t sector_detail = 0U;
+    uint8_t protection_mode = 0U;
     uint8_t r_or_w;
-    for (uint32_t i = 0U; i < 8U; i++) {
+    for (uint32_t i = 0U; i < 24U; i++) {
         uint8_t yes_or_no;
         cout << "Do you want to enable protection for sector " << i << "? (Y/N): ";
         cin >> yes_or_no;
         if (yes_or_no == 'N' || yes_or_no == 'n')
             continue;
-        protect_or_not |= (1U << i);
+        sector_detail |= (1U << i);
     }
-    cout << "Do you want to enable write or r/w protection?" << endl;
-    cout << "(R: Read-Write/ W:Write): " << endl;
+    cout << "Do you want to enable write or PCROP protection?" << endl;
+    cout << "(R: PCROP/ W:Write): ";
     cin >> r_or_w;
     if (r_or_w == 'W' || r_or_w == 'w')
         protection_mode = 1U;
     else
         protection_mode = 2U;
-    tx_buffer[0] = 3U;
+    tx_buffer[0] = 6U;
     tx_buffer[1] = 0x58;
-    tx_buffer[2] = protect_or_not;
-    tx_buffer[3] = protection_mode;
-    tx_cmd_len = 4U;
+    *(uint32_t *)(tx_buffer + 2) = sector_detail;
+    tx_buffer[6] = protection_mode;
+    tx_cmd_len = 7U;
 }
 
 /**
@@ -382,6 +382,15 @@ void host_app::get_bootloader_respond(void)
                 cout << "Flash erase failed!" << endl;
             }
             break;
+        case 0x9:
+            uint8_t config_result;
+            r_read(rx_buffer + 1, 1);
+            config_result = rx_buffer[1];
+            if (config_result == 1) {
+                cout << "Config success!" << endl;
+            } else {
+                cout << "Config failed!" << endl;
+            }
         case 0xB:
             uint32_t sector_1, sector_2;
             r_read(rx_buffer + 1, 8);

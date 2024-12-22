@@ -30,4 +30,5 @@ unsigned int option_byte_unlock(void);
 unsigned int option_byte_lock(void);
 unsigned int flash_sec_erase(unsigned int sec_no);
 unsigned int flash_seq_erase(unsigned int start_sec, unsigned int num_sec);
+unsigned int configure_flash_sector_rw_prot(unsigned int sector_details, unsigned char prot_mode);
 unsigned int get_sector_status(unsigned int *sector_1, unsigned int *sector_2);
