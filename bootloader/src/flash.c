@@ -92,7 +92,7 @@ unsigned int configure_flash_sector_rw_prot(unsigned int sector_details, unsigne
     while (*(unsigned int *)(FLASH_SR) & (1U << 16));
 
     unsigned int sector_1_detail = sector_details & 0xFFF;
-    unsigned int sector_2_detail = sector_details & 0xFFF000;
+    unsigned int sector_2_detail = (sector_details & 0xFFF000) >> 12;
 
     if (prot_mode == 0U) { //disable
         // reset SPRMOD bit to default state
@@ -106,10 +106,10 @@ unsigned int configure_flash_sector_rw_prot(unsigned int sector_details, unsigne
         // set SPRMOD bit to 0 for write protection
         *(unsigned int *)(FLASH_OPTCR)  &= ~(1U << 31);
         // configure nWRP bit for specific bits
-        *(unsigned int *)(FLASH_OPTCR1) &= ~(0xFFF << 16);
-        *(unsigned int *)(FLASH_OPTCR1) |= (sector_2_detail << 16);
-        *(unsigned int *)(FLASH_OPTCR)  &= ~(0xFFF << 16);
-        *(unsigned int *)(FLASH_OPTCR)  |= (sector_1_detail << 16);
+        *(unsigned int *)(FLASH_OPTCR1) |= (0xFFF << 16);
+        *(unsigned int *)(FLASH_OPTCR1) &= ~(sector_2_detail << 16);
+        *(unsigned int *)(FLASH_OPTCR)  |= (0xFFF << 16);
+        *(unsigned int *)(FLASH_OPTCR)  &= ~(sector_1_detail << 16);
         // set OPTSTRT bit for operation
         *(unsigned int *)(FLASH_OPTCR)  |= (1U << 1);
     } else { // PCROP protection
@@ -137,8 +137,8 @@ unsigned int get_sector_status(unsigned int *sector_1, unsigned int *sector_2)
     while (*(unsigned int *)(FLASH_SR) & (1U << 16));
 
     // return the flash bank 1 & 2 nWRP bits and SPRMOD bits
-    *sector_1 = *(volatile unsigned int *)(FLASH_OPTCR)  | (0x8FFF0000);
-    *sector_2 = *(volatile unsigned int *)(FLASH_OPTCR1) | (0x0FFF0000);
+    *sector_1 = *(volatile unsigned int *)(FLASH_OPTCR)  & (0x8FFF0000);
+    *sector_2 = *(volatile unsigned int *)(FLASH_OPTCR1) & (0x0FFF0000);
 
     while (*(unsigned int *)(FLASH_SR) & (1U << 16));
     if (FLASH_FAIL == option_byte_lock())

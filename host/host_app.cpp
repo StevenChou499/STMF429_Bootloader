@@ -246,7 +246,8 @@ void host_app::write_en_rw_prot_cmd(void)
     uint8_t r_or_w;
     for (uint32_t i = 0U; i < 24U; i++) {
         uint8_t yes_or_no;
-        cout << "Do you want to enable protection for sector " << i << "? (Y/N): ";
+        cout << "Do you want to enable protection for sector " 
+             << std::setw(2) << std::dec << i << "? (Y/N): ";
         cin >> yes_or_no;
         if (yes_or_no == 'N' || yes_or_no == 'n')
             continue;
@@ -383,6 +384,7 @@ void host_app::get_bootloader_respond(void)
             }
             break;
         case 0x9:
+        case 0xA:
             uint8_t config_result;
             r_read(rx_buffer + 1, 1);
             config_result = rx_buffer[1];
@@ -391,6 +393,7 @@ void host_app::get_bootloader_respond(void)
             } else {
                 cout << "Config failed!" << endl;
             }
+            break;
         case 0xB:
             uint32_t sector_1, sector_2;
             r_read(rx_buffer + 1, 8);
@@ -407,7 +410,7 @@ void host_app::get_bootloader_respond(void)
                 for (int i = 0; i < 12; i++) {
                     cout << 
                     "Sector " << std::setw(2) << std::dec << i + 12 << " PCROP protection: " << 
-                    ((sector_1 & (1U << (i + 16))) ? "Enable" : "Disable") 
+                    ((sector_2 & (1U << (i + 16))) ? "Enable" : "Disable") 
                     << endl;
                 }
             } else {
@@ -415,13 +418,13 @@ void host_app::get_bootloader_respond(void)
                 for (int i = 0; i < 12; i++) {
                     cout << 
                     "Sector " << std::setw(2) << std::dec << i << " write protection: " << 
-                    ((sector_1 & (1U << (i + 16))) ? "Enable" : "Disable") 
+                    ((sector_1 & (1U << (i + 16))) ? "Disable" : "Enable") 
                     << endl;
                 }
                 for (int i = 0; i < 12; i++) {
                     cout << 
                     "Sector " << std::setw(2) << std::dec << i + 12 << " write protection: " << 
-                    ((sector_1 & (1U << (i + 16))) ? "Enable" : "Disable") 
+                    ((sector_2 & (1U << (i + 16))) ? "Disable" : "Enable") 
                     << endl;
                 }
             }

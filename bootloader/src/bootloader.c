@@ -80,6 +80,7 @@ void parse_bootloader_cmd(void)
             break;
         case BL_DIS_RW_PROTECTION_CMD:
             myprintf("Received a command ask to disable r/w protection!\r\n");
+            bootloader_handle_dis_rw_prot_cmd(recv_buf, cmd_len);
             break;
         case BL_READ_SECTOR_STATUS_CMD:
             myprintf("Received a command ask to read sector status!\r\n");
@@ -180,6 +181,19 @@ void bootloader_handle_en_rw_prot_cmd(unsigned char *rx_buffer, unsigned int cmd
         unsigned int sector_detail = *(unsigned int *) (rx_buffer + 1);
         unsigned int protection_mode = rx_buffer[5];
         unsigned char result = configure_flash_sector_rw_prot(sector_detail, protection_mode);
+        UART3_Transmit((unsigned char *) &result, 1U);
+    }
+}
+
+void bootloader_handle_dis_rw_prot_cmd(unsigned char *rx_buffer, unsigned int cmd_len)
+{
+    if (CRC_ERROR == CRC32_verify(rx_buffer, cmd_len)) {
+        myprintf("Incorrect CRC!\r\n");
+        bootloader_send_nack();
+    } else {
+        myprintf("Correct CRC!\r\n");
+        bootloader_send_ack();
+        unsigned char result = configure_flash_sector_rw_prot(0xFFFFFF, 0U);
         UART3_Transmit((unsigned char *) &result, 1U);
     }
 }
