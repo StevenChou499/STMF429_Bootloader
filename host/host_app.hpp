@@ -5,6 +5,21 @@
 #define TX_BUFFER_LEN (1024U)
 #define RX_BUFFER_LEN (128U)
 
+typedef enum {
+    BTLDR_GET_VER      = 0x1, 
+    BTLDR_GET_HELP     = 0x2, 
+    BTLDR_GET_CID      = 0x3, 
+    BTLDR_GET_RDP      = 0x4, 
+    BTLDR_GO_ADDR      = 0x5, 
+    BTLDR_FLASH_ERASE  = 0x6, 
+    BTLDR_MEM_READ     = 0x7, 
+    BTLDR_MEM_WRITE    = 0x8, 
+    BTLDR_EN_RW_PROT   = 0x9, 
+    BTLDR_DIS_RW_PROT  = 0xA, 
+    BTLDR_READ_SEC_STA = 0xB, 
+    BTLDR_READ_OTP     = 0xC,
+} bootloader_cmd_t;
+
 using std::string;
     
 typedef union {

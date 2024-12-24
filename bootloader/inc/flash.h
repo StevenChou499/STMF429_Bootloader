@@ -16,6 +16,8 @@
 #define FLASH_OB3         (0x1FFEC000U)
 #define FLASH_OB4         (0x1FFEC008U)
 
+#define FLASH_OTP_BASE    (0x1FFF7800U)
+
 #define FLASH_SUCCESS     (1U)
 #define FLASH_FAIL        (0U)
 
@@ -32,3 +34,4 @@ unsigned int flash_sec_erase(unsigned int sec_no);
 unsigned int flash_seq_erase(unsigned int start_sec, unsigned int num_sec);
 unsigned int configure_flash_sector_rw_prot(unsigned int sector_details, unsigned char prot_mode);
 unsigned int get_sector_status(unsigned int *sector_1, unsigned int *sector_2);
+void read_otp_sector(unsigned int block_no, unsigned char *storing_buf);

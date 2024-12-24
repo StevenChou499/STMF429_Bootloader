@@ -145,3 +145,13 @@ unsigned int get_sector_status(unsigned int *sector_1, unsigned int *sector_2)
         return FLASH_FAIL;
     return FLASH_SUCCESS;
 }
+
+void read_otp_sector(unsigned int block_no, unsigned char *storing_buf)
+{
+    if (block_no > 15)
+        return;
+    unsigned char *pOTP = ((unsigned char *)(FLASH_OTP_BASE) + 32U * block_no);
+    for (int i = 0; i < 32; i++) {
+        storing_buf[i] = pOTP[i];
+    }
+}

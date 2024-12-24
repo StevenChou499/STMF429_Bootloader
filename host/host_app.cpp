@@ -293,10 +293,21 @@ void host_app::write_read_sector_status_cmd(void)
     tx_cmd_len = 2U;
 }
 
+/**
+ *  1 byte 1 byte
+ * |      |       |
+ * | 0x5B | block |
+ * |      |       |
+ */
 void host_app::write_read_otp_cmd(void)
 {
-    tx_buffer[0] = 0x5B;
-    tx_cmd_len = 1U;
+    uint32_t block_no = 0U;
+    cout << "Which block of OTP area do you want to read (0 ~ 15): ";
+    cin >> block_no;
+    tx_buffer[0] = 0x2;
+    tx_buffer[1] = 0x5B;
+    tx_buffer[2] = block_no;
+    tx_cmd_len = 3U;
 }
 
 uint32_t host_app::get_crc(uint8_t *pBuf, uint32_t length)
@@ -344,20 +355,20 @@ void host_app::get_bootloader_respond(void)
         return;
     }
     switch (current_cmd) {
-        case 0x1:
+        case BTLDR_GET_VER:
             uint8_t btldr_version;
             r_read(rx_buffer + 1, 1);
             btldr_version = rx_buffer[1];
             cout << "Bootloader version is ver." << (uint32_t) btldr_version << endl << endl;
             break;
-        case 0x2:
+        case BTLDR_GET_HELP:
             uint8_t help_msg[600];
             r_read(help_msg, 572);
             help_msg[572] = '\0';
             cout << endl << "Prompt message: " << endl;
             cout << help_msg << endl;
             break;
-        case 0x3:
+        case BTLDR_GET_CID:
             uint16_t revision_id, device_id;
             r_read(rx_buffer + 1, 4);
             revision_id = *(uint16_t *)(rx_buffer + 3);
@@ -365,15 +376,15 @@ void host_app::get_bootloader_respond(void)
             cout << "The chip revision id is " << hex << revision_id
                  << ", and the device id is " << hex << device_id << endl;
             break;
-        case 0x4:
+        case BTLDR_GET_RDP:
             uint32_t rdp_status;
             r_read(rx_buffer + 1, 4);
             rdp_status = *(uint32_t *)(rx_buffer + 1);
             cout << "The read protection level is " << rdp_status << endl;
             break;
-        case 0x5:
+        case BTLDR_GO_ADDR:
             break;
-        case 0x6:
+        case BTLDR_FLASH_ERASE:
             uint8_t erase_result;
             r_read(rx_buffer + 1, 1);
             erase_result = rx_buffer[1];
@@ -383,8 +394,8 @@ void host_app::get_bootloader_respond(void)
                 cout << "Flash erase failed!" << endl;
             }
             break;
-        case 0x9:
-        case 0xA:
+        case BTLDR_EN_RW_PROT:
+        case BTLDR_DIS_RW_PROT:
             uint8_t config_result;
             r_read(rx_buffer + 1, 1);
             config_result = rx_buffer[1];
@@ -394,7 +405,7 @@ void host_app::get_bootloader_respond(void)
                 cout << "Config failed!" << endl;
             }
             break;
-        case 0xB:
+        case BTLDR_READ_SEC_STA:
             uint32_t sector_1, sector_2;
             r_read(rx_buffer + 1, 8);
             sector_1 = *(uint32_t *)(rx_buffer + 1);
@@ -427,6 +438,13 @@ void host_app::get_bootloader_respond(void)
                     ((sector_2 & (1U << (i + 16))) ? "Disable" : "Enable") 
                     << endl;
                 }
+            }
+            break;
+        case BTLDR_READ_OTP:
+            uint32_t otp_content[8];
+            r_read((uint8_t *)otp_content, 32U);
+            for (int i = 0; i < 8; i++) {
+                cout << std::hex << otp_content[i] << endl;
             }
             break;
         default:

@@ -88,6 +88,7 @@ void parse_bootloader_cmd(void)
             break;
         case BL_OTP_READ_CMD:
             myprintf("Received a command to read one time programmable memory!\r\n");
+            bootloader_handle_read_otp_cmd(recv_buf, cmd_len);
             break;
         default:
             myprintf("Unknown command\r\n");
@@ -208,7 +209,22 @@ void bootloader_handle_read_sector_status_cmd(unsigned char *rx_buffer, unsigned
         bootloader_send_ack();
         unsigned int sector_status[2];
         get_sector_status(sector_status, sector_status + 1);
-        UART3_Transmit((unsigned char *) sector_status, 8);
+        UART3_Transmit((unsigned char *) sector_status, 8U);
+    }
+}
+
+void bootloader_handle_read_otp_cmd(unsigned char *rx_buffer, unsigned int cmd_len)
+{
+    if (CRC_ERROR == CRC32_verify(rx_buffer, cmd_len)) {
+        myprintf("Incorrect CRC!\r\n");
+        bootloader_send_nack();
+    } else {
+        myprintf("Correct CRC!\r\n");
+        bootloader_send_ack();
+        unsigned int reading_block = rx_buffer[1];
+        unsigned char otp_content[32];
+        read_otp_sector(reading_block, otp_content);
+        UART3_Transmit(otp_content, 32U);
     }
 }
 
