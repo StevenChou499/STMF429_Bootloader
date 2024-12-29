@@ -3,7 +3,7 @@
 #include <cstdint>
 
 #define TX_BUFFER_LEN (1024U)
-#define RX_BUFFER_LEN (128U)
+#define RX_BUFFER_LEN (512U)
 
 typedef enum {
     BTLDR_GET_VER      = 0x1, 
@@ -36,6 +36,8 @@ public:
     uint8_t rx_buffer[RX_BUFFER_LEN];
     uint32_t tx_cmd_len;
     uint32_t rx_cmd_len;
+    uint32_t mem_read_addr;
+    uint32_t mem_read_len;
     functionpointer func_table[13];
 
     void write_getver_cmd(void);

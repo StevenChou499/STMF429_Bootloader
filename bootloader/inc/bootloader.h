@@ -32,6 +32,8 @@ void bootloader_handle_getcid_cmd(unsigned char *rx_buffer, unsigned int cmd_len
 void bootloader_handle_getrdp_status_cmd(unsigned char *rx_buffer, unsigned int cmd_len);
 void bootloader_handle_goaddr_cmd(unsigned char *rx_buffer, unsigned int cmd_len);
 void bootloader_handle_flash_erase_cmd(unsigned char *rx_buffer, unsigned int cmd_len);
+void bootloader_handle_mem_read_cmd(unsigned char *rx_buffer, unsigned int cmd_len);
+void bootloader_handle_mem_write_cmd(unsigned char *rx_buffer, unsigned int cmd_len);
 void bootloader_handle_en_rw_prot_cmd(unsigned char *rx_buffer, unsigned int cmd_len);
 void bootloader_handle_dis_rw_prot_cmd(unsigned char *rx_buffer, unsigned int cmd_len);
 void bootloader_handle_read_sector_status_cmd(unsigned char *rx_buffer, unsigned int cmd_len);

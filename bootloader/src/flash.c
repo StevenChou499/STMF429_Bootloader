@@ -56,6 +56,7 @@ unsigned int flash_sec_erase(unsigned int sec_no)
         sec_no -= FLASH_SEC_2_START;
         snb_bit = 0x10 | sec_no;
     }
+    *(volatile unsigned int *)(FLASH_CR) &= ~(0x1F << 3);
     *(volatile unsigned int *)(FLASH_CR) |= (snb_bit << 3);
     
     *(volatile unsigned int *)(FLASH_CR) |= (0x1U << 16);
@@ -85,11 +86,35 @@ unsigned int flash_seq_erase(unsigned int start_sec, unsigned int num_sec)
     return FLASH_SUCCESS;
 }
 
+unsigned int flash_program(unsigned int start_addr, unsigned char *pBuf, unsigned int len)
+{
+    
+    // flash_sec_erase(7U); // erasing sector 7, which is address 0x08060000 ~ 0x0807FFFF
+    // check BSY bit in FLASH_SR register
+    if (FLASH_FAIL == flash_unlock())
+        return FLASH_FAIL;
+    while (*(volatile unsigned int *)(FLASH_SR) & (0x1U << 16));
+    
+    // set PG bit in FLASH_CR register
+    *(unsigned int *)(FLASH_CR) |= (1U << 0);
+    // perform data write operation to desired memory address
+    for (int i = 0; i < len; i++) {
+        *(unsigned char *)(start_addr + i) = pBuf[i];
+    }
+    // wait for BSY bit to be cleared
+    while (*(volatile unsigned int *)(FLASH_SR) & (0x1U << 16));
+
+    if (FLASH_FAIL == flash_lock())
+        return FLASH_FAIL;
+    
+    return FLASH_SUCCESS;
+}
+
 unsigned int configure_flash_sector_rw_prot(unsigned int sector_details, unsigned char prot_mode)
 {
     if (FLASH_FAIL == option_byte_unlock())
         return FLASH_FAIL;
-    while (*(unsigned int *)(FLASH_SR) & (1U << 16));
+    while (*(volatile unsigned int *)(FLASH_SR) & (0x1U << 16));
 
     unsigned int sector_1_detail = sector_details & 0xFFF;
     unsigned int sector_2_detail = (sector_details & 0xFFF000) >> 12;
@@ -124,7 +149,7 @@ unsigned int configure_flash_sector_rw_prot(unsigned int sector_details, unsigne
         *(unsigned int *)(FLASH_OPTCR)  |= (1U << 1);
     }
 
-    while (*(unsigned int *)(FLASH_SR) & (1U << 16));
+    while (*(volatile unsigned int *)(FLASH_SR) & (0x1U << 16));
     if (FLASH_FAIL == option_byte_lock())
         return FLASH_FAIL;
     return FLASH_SUCCESS;
@@ -134,13 +159,13 @@ unsigned int get_sector_status(unsigned int *sector_1, unsigned int *sector_2)
 {
     if (FLASH_FAIL == option_byte_unlock())
         return FLASH_FAIL;
-    while (*(unsigned int *)(FLASH_SR) & (1U << 16));
+    while (*(volatile unsigned int *)(FLASH_SR) & (0x1U << 16));
 
     // return the flash bank 1 & 2 nWRP bits and SPRMOD bits
     *sector_1 = *(volatile unsigned int *)(FLASH_OPTCR)  & (0x8FFF0000);
     *sector_2 = *(volatile unsigned int *)(FLASH_OPTCR1) & (0x0FFF0000);
 
-    while (*(unsigned int *)(FLASH_SR) & (1U << 16));
+    while (*(volatile unsigned int *)(FLASH_SR) & (0x1U << 16));
     if (FLASH_FAIL == option_byte_lock())
         return FLASH_FAIL;
     return FLASH_SUCCESS;

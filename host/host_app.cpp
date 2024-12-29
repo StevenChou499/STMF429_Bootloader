@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <iostream>
+#include <fstream>
 #include <termios.h>
 #include <iomanip>
 
@@ -12,6 +13,10 @@ using std::cin,
       std::cout, 
       std::cerr, 
       std::hex, 
+      std::dec, 
+      std::setw, 
+      std::setfill, 
+      std::uppercase, 
       std::endl;
 
 host_app::host_app(string portname)
@@ -39,16 +44,18 @@ host_app::host_app(string portname)
         throw std::runtime_error("Error configuring tty settings");
     }
 
-    func_table[0]  = NULL;
-    func_table[1]  = &host_app::write_getver_cmd;
-    func_table[2]  = &host_app::write_gethelp_cmd;
-    func_table[3]  = &host_app::write_getcid_cmd;
-    func_table[4]  = &host_app::write_get_read_prot_cmd;
-    func_table[5]  = &host_app::write_goto_addr_cmd;
-    func_table[6]  = &host_app::write_erase_flash_section_cmd;
-    func_table[7]  = &host_app::write_mem_read_cmd;
-    func_table[8]  = &host_app::write_mem_write_cmd;
-    func_table[9]  = &host_app::write_en_rw_prot_cmd;
+    tx_cmd_len = rx_cmd_len = mem_read_len = 0U;
+
+    func_table[ 0] = NULL;
+    func_table[ 1] = &host_app::write_getver_cmd;
+    func_table[ 2] = &host_app::write_gethelp_cmd;
+    func_table[ 3] = &host_app::write_getcid_cmd;
+    func_table[ 4] = &host_app::write_get_read_prot_cmd;
+    func_table[ 5] = &host_app::write_goto_addr_cmd;
+    func_table[ 6] = &host_app::write_erase_flash_section_cmd;
+    func_table[ 7] = &host_app::write_mem_read_cmd;
+    func_table[ 8] = &host_app::write_mem_write_cmd;
+    func_table[ 9] = &host_app::write_en_rw_prot_cmd;
     func_table[10] = &host_app::write_dis_rw_prot_cmd;
     func_table[11] = &host_app::write_read_sector_status_cmd;
     func_table[12] = &host_app::write_read_otp_cmd;
@@ -113,8 +120,8 @@ bool host_app::parse_command(void)
     if (current_cmd == 13U)
         return false;
     (this->*func_table[current_cmd])();
-    append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
-    write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
+    // append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
+    // write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
     return true;
 }
 
@@ -123,7 +130,9 @@ void host_app::write_getver_cmd(void)
     tx_buffer[0] = 0x1;
     tx_buffer[1] = 0x50;
     tx_cmd_len = 2U;
-    cout << "Asking for bootloader command..." << endl;
+    append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
+    write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
+    cout << "Asking for bootloader version..." << endl;
 }
 
 void host_app::write_gethelp_cmd(void)
@@ -131,6 +140,8 @@ void host_app::write_gethelp_cmd(void)
     tx_buffer[0] = 0x1;
     tx_buffer[1] = 0x51;
     tx_cmd_len = 2U;
+    append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
+    write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
     cout << "Asking for help..." << endl;
 }
 
@@ -139,6 +150,8 @@ void host_app::write_getcid_cmd(void)
     tx_buffer[0] = 0x1;
     tx_buffer[1] = 0x52;
     tx_cmd_len = 2U;
+    append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
+    write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
     cout << "Asking for chip id..." << endl;
 }
 
@@ -154,6 +167,8 @@ void host_app::write_get_read_prot_cmd(void)
     tx_buffer[0] = 0x1;
     tx_buffer[1] = 0x53;
     tx_cmd_len = 2U;
+    append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
+    write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
     cout << "Asking for read protection status..." << endl;
 }
 
@@ -165,16 +180,16 @@ void host_app::write_get_read_prot_cmd(void)
  */
 void host_app::write_goto_addr_cmd(void)
 {
-    int_or_chars jump_addr;
-    cout << "What is the address you want to jump to ?" << endl;
-    cin >> jump_addr.int_value;
+    uint32_t jump_addr;
+    cout << "What is the address you want to jump to: ";
+    cin >> hex >> jump_addr;
     
     tx_buffer[0] = 0x5;
     tx_buffer[1] = 0x54;
-    for (uint32_t i = 0U; i < 4U; i++) {
-        tx_buffer[i + 1U] = jump_addr.ch_array[i];
-    }
+    *(uint32_t *)(tx_buffer + 2) = jump_addr;
     tx_cmd_len = 6U;
+    append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
+    write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
     cout << "Asking for jumping..." << endl;
 }
 
@@ -198,6 +213,9 @@ void host_app::write_erase_flash_section_cmd(void)
     tx_buffer[2] = sector_number;
     tx_buffer[3] = number_of_sectors;
     tx_cmd_len = 4U;
+    append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
+    write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
+    cout << "Erasing specific sector..." << endl;
 }
 
 /**
@@ -208,29 +226,91 @@ void host_app::write_erase_flash_section_cmd(void)
  */
 void host_app::write_mem_read_cmd(void)
 {
-    int_or_chars base_address;
-    uint32_t read_length;
-    cout << "What is the address you want to read? : " << endl;
-    cin >> base_address.int_value;
-    cout << "What is the reading length? (Max 255) : " << endl;
-    cin >> read_length;
+    cout << "What is the address you want to read? : ";
+    cin >> hex >> mem_read_addr;
+    cout << "What is the reading length? (Max 255) : ";
+    cin >> dec >> mem_read_len;
 
-    tx_buffer[0] = 0x6;
+    tx_buffer[0] = 0x9;
     tx_buffer[1] = 0x56;
-    for (uint32_t i = 0U; i < 4U; i++) {
-        tx_buffer[i + 2U] = base_address.ch_array[i];
-    }
-    tx_buffer[6] = read_length;
-    tx_cmd_len = 7U;
+    *(unsigned int *)(tx_buffer + 2) = mem_read_addr;
+    *(unsigned int *)(tx_buffer + 6) = mem_read_len;
+    tx_cmd_len = 10U;
+    append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
+    write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
+    tcflush(mcu_fd, TCOFLUSH);
+    cout << "Reading memory address 0x" << std::setfill('0') 
+         << std::hex << mem_read_addr << "..." << endl;
 }
 
 void host_app::write_mem_write_cmd(void)
 {
-    int_or_chars base_address;
-    uint32_t length;
-    tx_buffer[0] = 0x1;
-    tx_buffer[0] = 0x57;
-    tx_cmd_len = 2U;
+    uint32_t base_address;
+    std::ifstream binfile;
+    cout << "What is the base address you want to program: ";
+    cin >> hex >> base_address;
+    binfile.open("../User_app_STM32F429xx.bin", std::ios::binary);
+    
+    while (1) {
+        binfile.read((char *) (tx_buffer + 10), 64);
+        cout << "read.good(): " << binfile.good() << endl;
+        cout << "read.eofbit: " << binfile.eof() << endl;
+        cout << "read.failbit: " << binfile.fail() << endl;
+        cout << "read.badbit: " << binfile.bad() << endl;
+        uint32_t read_len = binfile.gcount();
+        cout << "read_len = " << dec << read_len << endl;
+        if (read_len <= 0)
+            break;
+        tx_buffer[0] = read_len + 9U;
+        tx_buffer[1] = 0x57;
+        *(uint32_t *)(tx_buffer + 2) = base_address;
+        *(uint32_t *)(tx_buffer + 6) = read_len;
+        tx_cmd_len = 10U + read_len;
+        cout << "Programming address " << setw(8) << hex << setfill('0') 
+             << base_address << " with " << dec << read_len << " bytes" << endl;
+        append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
+        uint32_t written = write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
+        sleep(1);
+        cout << "Written " << written << " bytes" << endl;
+        cout << "tx_cmd_len is " << tx_cmd_len << endl;
+        cout << "Programming memory..." << endl;
+        base_address += read_len;
+
+        cout << "Reading ACK or NACK..." << endl;
+        r_read(rx_buffer, 1);
+        uint8_t ack_or_nack = rx_buffer[0];
+        cout << "ack_or_nack is " << (uint32_t)ack_or_nack << endl;
+        if (ack_or_nack == 0xC) {
+            cerr << "CRC Error!" << endl << "Please try again" << endl;
+            return;
+        }
+
+        r_read(rx_buffer + 1, 1);
+        uint8_t program_result;
+        program_result = rx_buffer[1];
+        cout << "Program result : " << std::dec << (uint32_t)program_result << endl;
+        if (program_result == 1) {
+            cout << "Program success!" << endl;
+        } else {
+            cout << "Program failed!" << endl;
+        }
+        for (int i = 0; i < 100000U; i++);
+    }
+
+    // Program complete
+    tx_buffer[0] = 5U;
+    tx_buffer[1] = 0x57;
+    *(uint32_t *)(tx_buffer + 2) = 0xFFFFFFFFU;
+    tx_cmd_len = 6U;
+    append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
+    write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
+    cout << "Program Checking..." << endl;
+    // tx_buffer[0] = read_len - 1;
+    // tx_buffer[1] = 0x57;
+    // tx_cmd_len = 2U + read_len;
+    // append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
+    // write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
+    // cout << "Programming memory..." << endl;
 }
 
 /**
@@ -247,7 +327,7 @@ void host_app::write_en_rw_prot_cmd(void)
     for (uint32_t i = 0U; i < 24U; i++) {
         uint8_t yes_or_no;
         cout << "Do you want to enable protection for sector " 
-             << std::setw(2) << std::dec << i << "? (Y/N): ";
+             << setw(2) << dec << i << "? (Y/N): ";
         cin >> yes_or_no;
         if (yes_or_no == 'N' || yes_or_no == 'n')
             continue;
@@ -265,6 +345,9 @@ void host_app::write_en_rw_prot_cmd(void)
     *(uint32_t *)(tx_buffer + 2) = sector_detail;
     tx_buffer[6] = protection_mode;
     tx_cmd_len = 7U;
+    append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
+    write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
+    cout << "Enabling R/W protection..." << endl;
 }
 
 /**
@@ -278,6 +361,9 @@ void host_app::write_dis_rw_prot_cmd(void)
     tx_buffer[0] = 0x1;
     tx_buffer[1] = 0x59;
     tx_cmd_len = 2U;
+    append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
+    write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
+    cout << "Disabling R/W protection..." << endl;
 }
 
 /**
@@ -291,6 +377,9 @@ void host_app::write_read_sector_status_cmd(void)
     tx_buffer[0] = 0x1;
     tx_buffer[1] = 0x5A;
     tx_cmd_len = 2U;
+    append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
+    write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
+    cout << "Reading sector status..." << endl;
 }
 
 /**
@@ -308,6 +397,9 @@ void host_app::write_read_otp_cmd(void)
     tx_buffer[1] = 0x5B;
     tx_buffer[2] = block_no;
     tx_cmd_len = 3U;
+    append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
+    write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
+    cout << "Reading OTP area..." << endl;
 }
 
 uint32_t host_app::get_crc(uint8_t *pBuf, uint32_t length)
@@ -394,6 +486,25 @@ void host_app::get_bootloader_respond(void)
                 cout << "Flash erase failed!" << endl;
             }
             break;
+        case BTLDR_MEM_READ:
+            r_read(rx_buffer + 1, mem_read_len);
+            for (int i = 0; i < (mem_read_len / 4); i++) {
+                cout << setw(8) << setfill('0') << uppercase << hex;
+                cout << (mem_read_addr + 4 * i) << ": ";
+                cout << setw(8) << setfill('0') << uppercase << hex;
+                cout << *((uint32_t *)(rx_buffer + 1) + i) << endl;
+            }
+            break;
+        case BTLDR_MEM_WRITE:
+            r_read(rx_buffer + 1, 1);
+            uint8_t program_result;
+            program_result = rx_buffer[1];
+            if (program_result == 1) {
+                cout << "Program complete!" << endl;
+            } else {
+                cout << "Program failed!" << endl;
+            }
+            break;
         case BTLDR_EN_RW_PROT:
         case BTLDR_DIS_RW_PROT:
             uint8_t config_result;
@@ -413,28 +524,28 @@ void host_app::get_bootloader_respond(void)
             if (sector_1 & 0x80000000) {
                 // PCROP enabled. nWPRi bits are for PCROP protection
                 for (int i = 0; i < 12; i++) {
-                    cout << 
-                    "Sector " << std::setw(2) << std::dec << i << " PCROP protection: " << 
+                    cout << setw(2) << dec;
+                    cout << "Sector " << i << " PCROP protection: " << 
                     ((sector_1 & (1U << (i + 16))) ? "Enable" : "Disable") 
                     << endl;
                 }
                 for (int i = 0; i < 12; i++) {
-                    cout << 
-                    "Sector " << std::setw(2) << std::dec << i + 12 << " PCROP protection: " << 
+                    cout << setw(2) << dec;
+                    cout << "Sector " << i + 12 << " PCROP protection: " << 
                     ((sector_2 & (1U << (i + 16))) ? "Enable" : "Disable") 
                     << endl;
                 }
             } else {
                 // PCROP disabled. nWPRi bits are for write protection
                 for (int i = 0; i < 12; i++) {
-                    cout << 
-                    "Sector " << std::setw(2) << std::dec << i << " write protection: " << 
+                    cout << setw(2) << dec;
+                    cout << "Sector " << i << " write protection: " << 
                     ((sector_1 & (1U << (i + 16))) ? "Disable" : "Enable") 
                     << endl;
                 }
                 for (int i = 0; i < 12; i++) {
-                    cout << 
-                    "Sector " << std::setw(2) << std::dec << i + 12 << " write protection: " << 
+                    cout << setw(2) << dec;
+                    cout << "Sector " << i + 12 << " write protection: " << 
                     ((sector_2 & (1U << (i + 16))) ? "Disable" : "Enable") 
                     << endl;
                 }
@@ -444,7 +555,7 @@ void host_app::get_bootloader_respond(void)
             uint32_t otp_content[8];
             r_read((uint8_t *)otp_content, 32U);
             for (int i = 0; i < 8; i++) {
-                cout << std::hex << otp_content[i] << endl;
+                cout << hex << otp_content[i] << endl;
             }
             break;
         default:

@@ -22,7 +22,7 @@ btldr_strct_t btldr_strct = {
     "quit                                  :  q\r\n",
 };
 
-unsigned char recv_buf[128];
+unsigned char recv_buf[512];
 unsigned char send_buf[32];
 
 void bootloader_init(void)
@@ -39,6 +39,9 @@ void parse_bootloader_cmd(void)
     UART3_Receive(&cmd_len, 1);
 
     // 2. Receive the actual command code and the CRC
+    // for (int i = 0; i < 512; i++) {
+    //     recv_buf[i] = 0;
+    // }
     UART3_Receive(recv_buf, cmd_len + 4);
     unsigned char bl_cmd_code = recv_buf[0];
 
@@ -70,9 +73,11 @@ void parse_bootloader_cmd(void)
             break;
         case BL_MEM_READ_CMD:
             myprintf("Received a command ask to read memory!\r\n");
+            bootloader_handle_mem_read_cmd(recv_buf, cmd_len);
             break;
         case BL_MEM_WRITE_CMD:
             myprintf("Received a command ask to write memory!\r\n");
+            bootloader_handle_mem_write_cmd(recv_buf, cmd_len);
             break;
         case BL_EN_RW_PROTECTION_CMD:
             myprintf("Received a command ask to enable r/w protection!\r\n");
@@ -153,6 +158,17 @@ void bootloader_handle_getrdp_status_cmd(unsigned char *rx_buffer, unsigned int 
 
 void bootloader_handle_goaddr_cmd(unsigned char *rx_buffer, unsigned int cmd_len)
 {
+    if (CRC_ERROR == CRC32_verify(rx_buffer, cmd_len)) {
+        myprintf("Incorrect CRC!\r\n");
+        bootloader_send_nack();
+    } else {
+        myprintf("Correct CRC!\r\n");
+        bootloader_send_ack();
+        unsigned int jumping_addr = *(unsigned int *)(rx_buffer + 1);
+        jumping_addr += 1;
+        void (*lets_jump)(void) = (void *)jumping_addr;
+        lets_jump();
+    }
     return;
 }
 
@@ -168,6 +184,50 @@ void bootloader_handle_flash_erase_cmd(unsigned char *rx_buffer, unsigned int cm
         unsigned char num_of_sectors = rx_buffer[2];
         unsigned char erase_status = flash_seq_erase(starting_sector, num_of_sectors);
         UART3_Transmit((unsigned char *) &erase_status, 1U);
+    }
+}
+
+void bootloader_handle_mem_read_cmd(unsigned char *rx_buffer, unsigned int cmd_len)
+{
+    if (CRC_ERROR == CRC32_verify(rx_buffer, cmd_len)) {
+        myprintf("Incorect CRC!\r\n");
+        bootloader_send_nack();
+    } else {
+        myprintf("Correct CRC!\r\n");
+        bootloader_send_ack();
+        unsigned int starting_addr = *(unsigned int *)(rx_buffer + 1);
+        unsigned int no_of_chars = *(unsigned int *)(rx_buffer + 5);
+        unsigned char read_arr[256];
+        for (int i = 0; i < no_of_chars; i++) {
+            read_arr[i] = *((unsigned char *)(starting_addr) + i);
+        }
+        UART3_Transmit((unsigned char *) read_arr, no_of_chars);
+    }
+}
+
+void bootloader_handle_mem_write_cmd(unsigned char *rx_buffer, unsigned int cmd_len)
+{
+    if (CRC_ERROR == CRC32_verify(rx_buffer, cmd_len)) {
+        myprintf("Incorrect CRC!\r\n");
+        bootloader_send_nack();
+    } else {
+        myprintf("Correct CRC!\r\n");
+        bootloader_send_ack();
+        unsigned int writing_addr = *(unsigned int *)(rx_buffer + 1);
+        if (writing_addr == 0xFFFFFFFFU) {
+            // finish programming
+            unsigned char program_done = FLASH_SUCCESS;
+            UART3_Transmit((unsigned char *) &program_done, 1U);
+            return;
+        }
+        unsigned int no_of_chars = *(unsigned int *)(rx_buffer + 5);
+        unsigned char writing_load[256];
+        for (int i = 0; i < no_of_chars; i++) {
+            writing_load[i] = rx_buffer[9 + i];
+        }
+        unsigned char program_status = 
+                      flash_program(writing_addr, writing_load, no_of_chars);
+        UART3_Transmit((unsigned char *) &program_status, 1U);
     }
 }
 
