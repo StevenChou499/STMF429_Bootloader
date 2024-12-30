@@ -120,8 +120,6 @@ bool host_app::parse_command(void)
     if (current_cmd == 13U)
         return false;
     (this->*func_table[current_cmd])();
-    // append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
-    // write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
     return true;
 }
 
@@ -252,13 +250,8 @@ void host_app::write_mem_write_cmd(void)
     binfile.open("../User_app_STM32F429xx.bin", std::ios::binary);
     
     while (1) {
-        binfile.read((char *) (tx_buffer + 10), 64);
-        cout << "read.good(): " << binfile.good() << endl;
-        cout << "read.eofbit: " << binfile.eof() << endl;
-        cout << "read.failbit: " << binfile.fail() << endl;
-        cout << "read.badbit: " << binfile.bad() << endl;
+        binfile.read((char *) (tx_buffer + 10), 128);
         uint32_t read_len = binfile.gcount();
-        cout << "read_len = " << dec << read_len << endl;
         if (read_len <= 0)
             break;
         tx_buffer[0] = read_len + 9U;
@@ -266,20 +259,12 @@ void host_app::write_mem_write_cmd(void)
         *(uint32_t *)(tx_buffer + 2) = base_address;
         *(uint32_t *)(tx_buffer + 6) = read_len;
         tx_cmd_len = 10U + read_len;
-        cout << "Programming address " << setw(8) << hex << setfill('0') 
-             << base_address << " with " << dec << read_len << " bytes" << endl;
         append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
         uint32_t written = write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
-        sleep(1);
-        cout << "Written " << written << " bytes" << endl;
-        cout << "tx_cmd_len is " << tx_cmd_len << endl;
-        cout << "Programming memory..." << endl;
-        base_address += read_len;
+        usleep(50 * 1000); // wait for 30ms
 
-        cout << "Reading ACK or NACK..." << endl;
         r_read(rx_buffer, 1);
         uint8_t ack_or_nack = rx_buffer[0];
-        cout << "ack_or_nack is " << (uint32_t)ack_or_nack << endl;
         if (ack_or_nack == 0xC) {
             cerr << "CRC Error!" << endl << "Please try again" << endl;
             return;
@@ -288,14 +273,19 @@ void host_app::write_mem_write_cmd(void)
         r_read(rx_buffer + 1, 1);
         uint8_t program_result;
         program_result = rx_buffer[1];
-        cout << "Program result : " << std::dec << (uint32_t)program_result << endl;
         if (program_result == 1) {
-            cout << "Program success!" << endl;
+            cout << "Program memory address 0x" << hex << setw(8) 
+                 << setfill('0') << base_address << " success!" << endl;
         } else {
-            cout << "Program failed!" << endl;
+            cout << "Program memory address 0x" << hex << setw(8) 
+                 << setfill('0') << base_address << " failed!" << endl;
         }
-        for (int i = 0; i < 100000U; i++);
+        
+        base_address += read_len; // calculate the next base address
     }
+
+    // Close the Opened binary file
+    binfile.close();
 
     // Program complete
     tx_buffer[0] = 5U;
@@ -304,13 +294,7 @@ void host_app::write_mem_write_cmd(void)
     tx_cmd_len = 6U;
     append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
     write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
-    cout << "Program Checking..." << endl;
-    // tx_buffer[0] = read_len - 1;
-    // tx_buffer[1] = 0x57;
-    // tx_cmd_len = 2U + read_len;
-    // append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
-    // write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
-    // cout << "Programming memory..." << endl;
+    cout << "Program result checking..." << endl;
 }
 
 /**

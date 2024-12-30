@@ -24,6 +24,9 @@ $(HOST_TARGET):
 debug:
 	$(DB) $(BL_TARGET)
 
+load:
+	openocd -f board/st_nucleo_f4.cfg -c "program $(BL_TARGET) verify reset exit"
+
 clean:
 	$(RM) -r $(BUILD_DIR)
 	$(RM) $(HOST_DIR)/*.o

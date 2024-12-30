@@ -1,4 +1,5 @@
 #include "../inc/flash.h"
+#include "../inc/myprintf.h"
 
 unsigned int flash_unlock(void)
 {
