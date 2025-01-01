@@ -6,6 +6,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <limits>
 using namespace std;
 
 int main()
@@ -19,7 +20,7 @@ int main()
             break;
         btldr_app.get_bootloader_respond();
         cout << "Please press enter to continue...";
-        cin.get();
+        cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         cin.get();
     }
     

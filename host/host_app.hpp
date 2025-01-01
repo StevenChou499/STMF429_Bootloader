@@ -28,7 +28,7 @@ typedef union {
 } int_or_chars;
 
 class host_app {
-public:
+private:
     typedef void (host_app::*functionpointer)();
     int32_t mcu_fd;
     uint32_t current_cmd;
