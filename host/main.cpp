@@ -1,4 +1,3 @@
-// serial_posix.cpp
 #include "host_app.hpp"
 #include <cstring>
 #include <errno.h>
@@ -7,15 +6,12 @@
 #include <termios.h>
 #include <unistd.h>
 #include <stdint.h>
-// #include <conio.h>
 using namespace std;
 
 int main()
 {
     string portname = "/dev/ttyACM0";
     host_app btldr_app(portname);
-
-    // cout << "host_app created..." << endl;
 
     while (1) {
         btldr_app.show_prompt();

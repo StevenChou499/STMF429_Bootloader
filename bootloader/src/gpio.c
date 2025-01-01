@@ -17,8 +17,6 @@ void User_Btn_Init(void)
 {
     // enable AHB1 bus clock
     *((volatile unsigned int *)(RCC_AHB1ENR)) |= (GPIOCEN);
-    // // set PC13 to input mode
-    // *((volatile unsigned int *)(GPIOC)) &= ~(0x3 << 26U);
 }
 
 unsigned char User_Btn_Read(void)

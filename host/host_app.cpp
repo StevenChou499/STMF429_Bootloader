@@ -124,6 +124,12 @@ bool host_app::parse_command(void)
     return true;
 }
 
+/**
+ *  1 byte
+ * |      |
+ * | 0x50 |
+ * |      |
+ */
 void host_app::write_getver_cmd(void)
 {
     tx_buffer[0] = 0x1;
@@ -134,6 +140,12 @@ void host_app::write_getver_cmd(void)
     cout << "Asking for bootloader version..." << endl;
 }
 
+/**
+ *  1 byte
+ * |      |
+ * | 0x51 |
+ * |      |
+ */
 void host_app::write_gethelp_cmd(void)
 {
     tx_buffer[0] = 0x1;
@@ -144,6 +156,12 @@ void host_app::write_gethelp_cmd(void)
     cout << "Asking for help..." << endl;
 }
 
+/**
+ *  1 byte
+ * |      |
+ * | 0x52 |
+ * |      |
+ */
 void host_app::write_getcid_cmd(void)
 {
     tx_buffer[0] = 0x1;
@@ -218,10 +236,10 @@ void host_app::write_erase_flash_section_cmd(void)
 }
 
 /**
- *  1 byte     4 byte     1 byte
- * |      |              |      |
- * | 0x56 | base address | read |
- * |      |              | len  |
+ *  1 byte     4 byte        4 byte
+ * |      |              |             |
+ * | 0x56 | base address |  read len   |
+ * |      |              |             |
  */
 void host_app::write_mem_read_cmd(void)
 {
@@ -241,6 +259,12 @@ void host_app::write_mem_read_cmd(void)
          << std::hex << mem_read_addr << "..." << endl;
 }
 
+/**
+ *  1 byte     4 bytes       4 bytes
+ * |      |              |             |
+ * | 0x57 | base address |  write len  |
+ * |      |              |             |
+ */
 void host_app::write_mem_write_cmd(void)
 {
     uint32_t base_address;
@@ -270,14 +294,14 @@ void host_app::write_mem_write_cmd(void)
     
     while (1) {
         binfile.read((char *) (tx_buffer + 10), 128);
-        uint32_t read_len = binfile.gcount();
-        if (read_len <= 0)
+        uint32_t write_len = binfile.gcount();
+        if (write_len <= 0)
             break;
-        tx_buffer[0] = read_len + 9U;
+        tx_buffer[0] = write_len + 9U;
         tx_buffer[1] = 0x57;
         *(uint32_t *)(tx_buffer + 2) = base_address;
-        *(uint32_t *)(tx_buffer + 6) = read_len;
-        tx_cmd_len = 10U + read_len;
+        *(uint32_t *)(tx_buffer + 6) = write_len;
+        tx_cmd_len = 10U + write_len;
         append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
         uint32_t written = write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
         usleep(50 * 1000); // wait for 30ms
@@ -300,7 +324,7 @@ void host_app::write_mem_write_cmd(void)
                  << setfill('0') << uppercase << base_address << " failed!" << endl;
         }
         
-        base_address += read_len; // calculate the next base address
+        base_address += write_len; // calculate the next base address
     }
 
     // Close the Opened binary file
@@ -317,10 +341,10 @@ void host_app::write_mem_write_cmd(void)
 }
 
 /**
- *  1 byte 1 byte 1 byte
- * |      | prot |      |
- * | 0x58 |  or  | r/w  |
- * |      | not  | prot |
+ *  1 byte     4 byte    1 byte
+ * |      |             |      |
+ * | 0x58 | sec. detail | r/w  |
+ * |      |             | prot |
  */
 void host_app::write_en_rw_prot_cmd(void)
 {
