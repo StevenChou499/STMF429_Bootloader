@@ -24,6 +24,7 @@ typedef struct {
     const char    *btldr_help_msg;
 } btldr_strct_t;
 
+void jump_to_application(void);
 void bootloader_init(void);
 void parse_bootloader_cmd(void);
 void bootloader_handle_getver_cmd(unsigned char *rx_buffer, unsigned int cmd_len);

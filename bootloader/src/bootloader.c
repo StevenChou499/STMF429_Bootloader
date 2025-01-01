@@ -3,6 +3,7 @@
 #include "../inc/bootloader.h"
 #include "../inc/crc.h"
 #include "../inc/flash.h"
+#include "../inc/gpio.h"
 
 btldr_strct_t btldr_strct = {
     .btldr_version = VERSION,
@@ -25,11 +26,24 @@ btldr_strct_t btldr_strct = {
 unsigned char recv_buf[512];
 unsigned char send_buf[32];
 
-void bootloader_init(void)
+void jump_to_application(void)
 {
-    
+    void (*app_reset_handler)(void);
+    unsigned int msp_value = *(volatile unsigned int *)(0x08008000U);
+    __asm volatile("MSR msp, %0" :: "r" (msp_value));
+    unsigned int reset_handler_addr = *(volatile unsigned int *)(0x08008004U);
+    app_reset_handler = (void*) reset_handler_addr;
+    app_reset_handler();
 }
 
+void bootloader_init(void)
+{
+    User_Btn_Init();
+    LD3_Init();
+    UART2_Init();
+    UART3_Init();
+    CRC32_Init();
+}
 
 // Bootloader command handle function
 void parse_bootloader_cmd(void)
@@ -39,9 +53,6 @@ void parse_bootloader_cmd(void)
     UART3_Receive(&cmd_len, 1);
 
     // 2. Receive the actual command code and the CRC
-    // for (int i = 0; i < 512; i++) {
-    //     recv_buf[i] = 0;
-    // }
     UART3_Receive(recv_buf, cmd_len + 4);
     unsigned char bl_cmd_code = recv_buf[0];
 

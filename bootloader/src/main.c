@@ -6,26 +6,14 @@
 
 int main()
 {
-    LD3_Init();
-    UART2_Init();
-    UART3_Init();
-    CRC32_Init();
-
-    for (int i = 0; i < 100; i++);
-    // int input = 0x12345678;
-    // int output = CRC32_Calculate(&input, 4);
-    // unsigned char len = 0U;
-    // UART3_Receive(&len, 1);
-    // char buffer[128];
-    // UART3_Receive(buffer, len);
-    // int output = CRC32_Calculate(buffer, len);
+    bootloader_init();
     
-    // while (1);
+    // read user button to check if directly jump to user application
+    if (RESET == User_Btn_Read())
+        jump_to_application();
 
+    // if user didn't press the button, wait for bootloader commands
     while (1) {
-    //     // char receive_buf[20];
-    //     // uart3_receive(receive_buf, 1);
-    //     // uart3_transmit(receive_buf, 1);
         myprintf("Waiting for bootloader commands...\r\n");
         parse_bootloader_cmd();
     }

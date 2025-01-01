@@ -8,6 +8,7 @@
 #include <fstream>
 #include <termios.h>
 #include <iomanip>
+#include <filesystem>
 
 using std::cin, 
       std::cout, 
@@ -113,7 +114,7 @@ bool host_app::parse_command(void)
 {
     if (!get_user_input()) {
         cerr << "Error input value, please try again." << endl;
-        return true;
+        return false;
     }
 
     // calls the corresponding function by users input
@@ -236,7 +237,6 @@ void host_app::write_mem_read_cmd(void)
     tx_cmd_len = 10U;
     append_crc(tx_buffer + 1U, tx_cmd_len - 1U);
     write(mcu_fd, tx_buffer, tx_cmd_len + 4U);
-    tcflush(mcu_fd, TCOFLUSH);
     cout << "Reading memory address 0x" << std::setfill('0') 
          << std::hex << mem_read_addr << "..." << endl;
 }
@@ -247,7 +247,26 @@ void host_app::write_mem_write_cmd(void)
     std::ifstream binfile;
     cout << "What is the base address you want to program: ";
     cin >> hex >> base_address;
-    binfile.open("../User_app_STM32F429xx.bin", std::ios::binary);
+    string dir = "../app/";
+    string filename;
+
+    cout << "Current file under app folder: " << endl;;
+    if (std::filesystem::exists(dir) && std::filesystem::is_directory(dir)) {
+        for (const auto& entry : std::filesystem::directory_iterator(dir)) {
+            cout << entry.path() << endl;
+        }
+    } else {
+        cout << "Directory doesn't exist." << endl;
+    }
+    cout << endl;
+
+    cout << "Please enter the file number you want to program: ";
+    cin >> filename;
+    dir += filename;
+
+    // binfile.open("../app/User_app_STM32F429xx.bin", std::ios::binary);
+    cout << "The directory is " << dir << endl;
+    binfile.open(dir, std::ios::binary);
     
     while (1) {
         binfile.read((char *) (tx_buffer + 10), 128);
@@ -275,10 +294,10 @@ void host_app::write_mem_write_cmd(void)
         program_result = rx_buffer[1];
         if (program_result == 1) {
             cout << "Program memory address 0x" << hex << setw(8) 
-                 << setfill('0') << base_address << " success!" << endl;
+                 << setfill('0') << uppercase << base_address << " success!" << endl;
         } else {
             cout << "Program memory address 0x" << hex << setw(8) 
-                 << setfill('0') << base_address << " failed!" << endl;
+                 << setfill('0') << uppercase << base_address << " failed!" << endl;
         }
         
         base_address += read_len; // calculate the next base address
