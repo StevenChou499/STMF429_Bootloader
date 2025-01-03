@@ -28,6 +28,11 @@ unsigned char send_buf[32];
 
 void jump_to_application(void)
 {
+    // Reseting AHB1 bus
+    AHB1_RESET_EN();
+    AHB1_RESET_DIS();
+
+    // Settting the msp value and jump to specific address
     void (*app_reset_handler)(void);
     unsigned int msp_value = *(volatile unsigned int *)(0x08008000U);
     __asm volatile("MSR msp, %0" :: "r" (msp_value));
